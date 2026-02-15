@@ -22,7 +22,35 @@ const envs: Record<string, Partial<StackInput>> = {
   //   // If you want to override the default settings, add the following
   // },
   dev: {
-    // Parameters for development environment
+    modelIds: [
+      'global.anthropic.claude-opus-4-5-20251101-v1:0',
+      'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
+      'global.anthropic.claude-haiku-4-5-20251001-v1:0',
+      'global.amazon.nova-2-lite-v1:0',
+    ],
+    imageGenerationModelIds: ['amazon.nova-canvas-v1:0'],
+    videoGenerationModelIds: ['amazon.nova-reel-v1:0'],
+    speechToSpeechModelIds: ['amazon.nova-sonic-v1:0'],
+    agentEnabled: true,
+    createGenericAgentCoreRuntime: true,
+    ragKnowledgeBaseEnabled: true,
+    agentCoreExternalRuntimes: [
+      {
+        name: '法令Agent',
+        arn: 'arn:aws:bedrock-agentcore:us-east-1:767397786624:runtime/lc_agent_dev-G926ztHUBZ',
+        description: '法令についてなんでも調べられます',
+      },
+      {
+        name: '自治体仕様書Agent',
+        arn: 'arn:aws:bedrock-agentcore:us-east-1:767397786624:runtime/ok_agent_dev-xnSJ2aBTN0',
+        description: '自治体標準化の仕様書について調べられます',
+      },
+      {
+        name: '統計Agent',
+        arn: 'arn:aws:bedrock-agentcore:us-east-1:767397786624:runtime/estat_agent_dev-hatoXl3TjV',
+        description: 'e-Stat政府統計データを検索・取得できます',
+      },
+    ],
   },
   staging: {
     // Parameters for staging environment
