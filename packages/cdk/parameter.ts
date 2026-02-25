@@ -22,11 +22,19 @@ const envs: Record<string, Partial<StackInput>> = {
   //   // If you want to override the default settings, add the following
   // },
   dev: {
+    selfSignUpEnabled: true,
     modelIds: [
       'global.anthropic.claude-opus-4-5-20251101-v1:0',
       'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
       'global.anthropic.claude-haiku-4-5-20251001-v1:0',
       'global.amazon.nova-2-lite-v1:0',
+      // === Custom models (not in upstream GenU) ===
+      'deepseek.v3.2',
+      'minimax.minimax-m2.1',
+      'zai.glm-4.7',
+      'zai.glm-4.7-flash',
+      'moonshotai.kimi-k2.5',
+      'qwen.qwen3-coder-next',
     ],
     imageGenerationModelIds: ['amazon.nova-canvas-v1:0'],
     videoGenerationModelIds: ['amazon.nova-reel-v1:0'],

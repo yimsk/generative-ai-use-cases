@@ -555,6 +555,39 @@ export const modelMetadata: Record<string, ModelMetadata> = {
     flags: MODEL_FEATURE.TEXT_ONLY,
     displayName: 'NVIDIA Nemotron Nano 3 30B',
   },
+  // === Custom models (not in upstream GenU) ===
+  // DeepSeek
+  'deepseek.v3.2': {
+    flags: MODEL_FEATURE.TEXT_ONLY,
+    displayName: 'DeepSeek V3.2',
+  },
+  // MiniMax AI
+  'minimax.minimax-m2.1': {
+    flags: MODEL_FEATURE.TEXT_ONLY,
+    displayName: 'MiniMax M2.1',
+  },
+  // Z.AI (Zhipu)
+  'zai.glm-4.7': {
+    flags: MODEL_FEATURE.TEXT_ONLY,
+    displayName: 'GLM 4.7',
+  },
+  'zai.glm-4.7-flash': {
+    flags: {
+      ...MODEL_FEATURE.TEXT_ONLY,
+      ...MODEL_FEATURE.LIGHT,
+    },
+    displayName: 'GLM 4.7 Flash',
+  },
+  // Moonshot AI
+  'moonshotai.kimi-k2.5': {
+    flags: MODEL_FEATURE.TEXT_IMAGE,
+    displayName: 'Kimi K2.5',
+  },
+  // Qwen
+  'qwen.qwen3-coder-next': {
+    flags: MODEL_FEATURE.TEXT_ONLY,
+    displayName: 'Qwen3 Coder Next',
+  },
 
   // === Image ===
 
