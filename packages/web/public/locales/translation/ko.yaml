@@ -305,6 +305,12 @@ drawer:
   generative_ai: 생성형 AI
   tools: 도구
   use_cases: 사용 사례
+error:
+  streamingError:
+    ACCESS_DENIED: 선택한 모델이 활성화되어 있지 않습니다. Amazon Bedrock 콘솔에서 모델을 활성화해 주세요.
+    PAYLOAD_TOO_LARGE: 첨부 파일의 크기가 너무 큽니다. 파일 크기 또는 첨부 파일 수를 줄이고 다시 시도해 주세요.
+    THROTTLING: 서버에 트래픽이 집중되고 있습니다. 잠시 후 다시 시도해 주세요.
+    UNKNOWN_ERROR: 오류가 발생했습니다. 다시 시도하거나 관리자에게 문의해 주세요.
 feedback:
   additional_feedback: 추가 피드백이 있으시면 여기에 입력해주세요. (선택사항)
   reason_error: 이유를 선택해주세요.
@@ -448,7 +454,16 @@ meetingMinutes:
   next_generation_in: '다음 생성까지: '
   no_transcript: 전사 없음
   partial_indicator: (...)
+  prompt_title_placeholder: 프롬프트 이름을 입력하세요...
   record_transcribe: 녹음 및 전사
+  save_as_prompt: 사용자 정의 프롬프트로 저장
+  saved_prompt_body: 프롬프트 내용
+  saved_prompt_created: 사용자 정의 프롬프트가 저장되었습니다
+  saved_prompt_delete_confirm: 이 프롬프트를 삭제하시겠습니까?
+  saved_prompt_deleted: 사용자 정의 프롬프트가 삭제되었습니다
+  saved_prompt_prefix: ★
+  saved_prompt_title: 프롬프트 제목
+  saved_prompt_updated: 사용자 정의 프롬프트가 업데이트되었습니다
   screen_audio_error: 화면 오디오 오류
   speech_recognition: 음성 인식
   style: 회의록 스타일
@@ -468,6 +483,7 @@ model:
   parameters:
     reasoning: 추론
     reasoning_budget: 추론 예산
+    reasoning_effort: 사고 깊이
 navigation:
   agentChat: 에이전트 채팅
   chat: 채팅
@@ -537,6 +553,18 @@ rag:
   please_refer: .
   retrieving: Kendra에서 참조 문서를 검색하는 중...
   title: RAG 채팅
+research:
+  description: 웹 검색을 활용하여 산업 전반에 걸친 다양한 연구 작업을 수행하고 상세한 연구 보고서를 작성합니다.
+  general_research: 일반 조사
+  general_research_desc: 광범위한 분야의 정보를 조사하고 종합적인 분석을 제공합니다
+  label: 리서치
+  mini_research: 빠른 조사
+  mini_research_desc: 핵심 사항을 빠르게 조사하고 간결한 답변을 제공합니다
+  select_mode: 모드를 선택하세요
+  start_conversation: 리서치 에이전트와 대화 시작
+  technical_research: 기술 조사
+  technical_research_desc: 상세한 기술 조사 및 분석을 수행합니다
+  title: 리서치
 setting:
   ai_items:
     agent_name: 에이전트 이름

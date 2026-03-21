@@ -1412,10 +1412,6 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 1`] = `
             "Key": "aws-cdk:auto-delete-objects",
             "Value": "true",
           },
-          {
-            "Key": "aws-cdk:cr-owned:656af005",
-            "Value": "true",
-          },
         ],
       },
       "Type": "AWS::S3::Bucket",
@@ -2916,6 +2912,36 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 2`] = `
       "Type": "Custom::OssIndex",
       "UpdateReplacePolicy": "Delete",
     },
+    "WebCrawlerDataSource": {
+      "Properties": {
+        "DataSourceConfiguration": {
+          "Type": "WEB",
+          "WebConfiguration": {
+            "CrawlerConfiguration": {
+              "CrawlerLimits": {
+                "MaxPages": 100,
+                "RateLimit": 300,
+              },
+              "Scope": "HOST_ONLY",
+            },
+            "SourceConfiguration": {
+              "UrlConfiguration": {
+                "SeedUrls": [
+                  {
+                    "Url": "https://aws-samples.github.io/generative-ai-use-cases/en/",
+                  },
+                ],
+              },
+            },
+          },
+        },
+        "KnowledgeBaseId": {
+          "Ref": "KnowledgeBase",
+        },
+        "Name": "web-crawler-data-source",
+      },
+      "Type": "AWS::Bedrock::DataSource",
+    },
   },
   "Rules": {
     "CheckBootstrapVersion": {
@@ -3878,7 +3904,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 4`] = `
             "Ref": "GenericAgentCoreAgentCoreFileBucket0430DA42",
           },
           "MCP_CONFIG_PATH": "/var/task/mcp-configs/agent-builder/mcp.json",
-          "SUPPORTED_CACHE_FIELDS": "{"anthropic.claude-opus-4-5-20251101-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-5-20250929-v1:0":["messages","system","tools"],"anthropic.claude-haiku-4-5-20251001-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-1-20250805-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-3-7-sonnet-20250219-v1:0":["messages","system","tools"],"anthropic.claude-3-5-haiku-20241022-v1:0":["messages","system","tools"],"amazon.nova-premier-v1:0":["messages","system"],"amazon.nova-pro-v1:0":["messages","system"],"amazon.nova-lite-v1:0":["messages","system"],"amazon.nova-micro-v1:0":["messages","system"],"amazon.nova-2-lite-v1:0":["messages","system"]}",
+          "SUPPORTED_CACHE_FIELDS": "{"anthropic.claude-opus-4-6-v1":["messages","system","tools"],"anthropic.claude-sonnet-4-6":["messages","system","tools"],"anthropic.claude-opus-4-5-20251101-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-5-20250929-v1:0":["messages","system","tools"],"anthropic.claude-haiku-4-5-20251001-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-1-20250805-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-3-7-sonnet-20250219-v1:0":["messages","system","tools"],"anthropic.claude-3-5-haiku-20241022-v1:0":["messages","system","tools"],"amazon.nova-premier-v1:0":["messages","system"],"amazon.nova-pro-v1:0":["messages","system"],"amazon.nova-lite-v1:0":["messages","system"],"amazon.nova-micro-v1:0":["messages","system"],"amazon.nova-2-lite-v1:0":["messages","system"]}",
         },
         "NetworkConfiguration": {
           "NetworkMode": "PUBLIC",
@@ -4267,7 +4293,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 4`] = `
             "Ref": "GenericAgentCoreAgentCoreFileBucket0430DA42",
           },
           "MCP_CONFIG_PATH": "/var/task/mcp-configs/generic/mcp.json",
-          "SUPPORTED_CACHE_FIELDS": "{"anthropic.claude-opus-4-5-20251101-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-5-20250929-v1:0":["messages","system","tools"],"anthropic.claude-haiku-4-5-20251001-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-1-20250805-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-3-7-sonnet-20250219-v1:0":["messages","system","tools"],"anthropic.claude-3-5-haiku-20241022-v1:0":["messages","system","tools"],"amazon.nova-premier-v1:0":["messages","system"],"amazon.nova-pro-v1:0":["messages","system"],"amazon.nova-lite-v1:0":["messages","system"],"amazon.nova-micro-v1:0":["messages","system"],"amazon.nova-2-lite-v1:0":["messages","system"]}",
+          "SUPPORTED_CACHE_FIELDS": "{"anthropic.claude-opus-4-6-v1":["messages","system","tools"],"anthropic.claude-sonnet-4-6":["messages","system","tools"],"anthropic.claude-opus-4-5-20251101-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-5-20250929-v1:0":["messages","system","tools"],"anthropic.claude-haiku-4-5-20251001-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-1-20250805-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-3-7-sonnet-20250219-v1:0":["messages","system","tools"],"anthropic.claude-3-5-haiku-20241022-v1:0":["messages","system","tools"],"amazon.nova-premier-v1:0":["messages","system"],"amazon.nova-pro-v1:0":["messages","system"],"amazon.nova-lite-v1:0":["messages","system"],"amazon.nova-micro-v1:0":["messages","system"],"amazon.nova-2-lite-v1:0":["messages","system"]}",
         },
         "NetworkConfiguration": {
           "NetworkMode": "PUBLIC",
@@ -4577,6 +4603,11 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
         "Ref": "AuthUserPoolclientA74673A9",
       },
     },
+    "FileBucketName": {
+      "Value": {
+        "Ref": "APIFileBucket8FB29855",
+      },
+    },
     "Flows": {
       "Value": "W10=",
     },
@@ -4782,7 +4813,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
       "Type": "AWS::IAM::Role",
       "UpdateReplacePolicy": "Delete",
     },
-    "APIApiDeployment3A5021234533d7a90339971d4b652d34a0e5b458": {
+    "APIApiDeployment3A502123677abf0a15820c6513302ec82e604a8d": {
       "DeletionPolicy": "Delete",
       "DependsOn": [
         "APIApiApi4XXDCF913C8",
@@ -4825,6 +4856,14 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
         "APIApiimagegenerate70662BCD",
         "APIApiimageOPTIONSA57099DB",
         "APIApiimage6FBCA1DF",
+        "APIApimeetingminutescustompromptsidANY52BC144A",
+        "APIApimeetingminutescustompromptsidOPTIONS5F023E7C",
+        "APIApimeetingminutescustompromptsid06E18295",
+        "APIApimeetingminutescustompromptsANYE6832501",
+        "APIApimeetingminutescustompromptsOPTIONS4DF82839",
+        "APIApimeetingminutescustomprompts5F46E76F",
+        "APIApimeetingminutesOPTIONSAE8DC0E7",
+        "APIApimeetingminutesE9413A2D",
         "APIApiOPTIONSE134DC36",
         "APIApipredictOPTIONS9065A8D6",
         "APIApipredictPOST376D7D2E",
@@ -4944,7 +4983,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
       ],
       "Properties": {
         "DeploymentId": {
-          "Ref": "APIApiDeployment3A5021234533d7a90339971d4b652d34a0e5b458",
+          "Ref": "APIApiDeployment3A502123677abf0a15820c6513302ec82e604a8d",
         },
         "RestApiId": {
           "Ref": "APIApiFFA96F67",
@@ -7217,6 +7256,391 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
         },
       },
       "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutesE9413A2D": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "APIApiFFA96F67",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "meeting-minutes",
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutesOPTIONSAE8DC0E7": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "APIApimeetingminutesE9413A2D",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustomprompts5F46E76F": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ParentId": {
+          "Ref": "APIApimeetingminutesE9413A2D",
+        },
+        "PathPart": "custom-prompts",
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsANYApiPermissionGenerativeAiUseCasesStackAPIApi89219E17ANYmeetingminutescustomprompts97A1F0B6": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptD242CECB",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456890123:",
+              {
+                "Ref": "APIApiFFA96F67",
+              },
+              "/",
+              {
+                "Ref": "APIApiDeploymentStageapiCD55D117",
+              },
+              "/*/meeting-minutes/custom-prompts",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsANYApiPermissionTestGenerativeAiUseCasesStackAPIApi89219E17ANYmeetingminutescustomprompts846A6265": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptD242CECB",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456890123:",
+              {
+                "Ref": "APIApiFFA96F67",
+              },
+              "/test-invoke-stage/*/meeting-minutes/custom-prompts",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsANYE6832501": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AuthorizationType": "COGNITO_USER_POOLS",
+        "AuthorizerId": {
+          "Ref": "APIAuthorizer9DCC037B",
+        },
+        "HttpMethod": "ANY",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "APIMeetingMinutesCustomPromptD242CECB",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "APIApimeetingminutescustomprompts5F46E76F",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsOPTIONS4DF82839": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "APIApimeetingminutescustomprompts5F46E76F",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsid06E18295": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ParentId": {
+          "Ref": "APIApimeetingminutescustomprompts5F46E76F",
+        },
+        "PathPart": "{id}",
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsidANY52BC144A": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AuthorizationType": "COGNITO_USER_POOLS",
+        "AuthorizerId": {
+          "Ref": "APIAuthorizer9DCC037B",
+        },
+        "HttpMethod": "ANY",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "APIMeetingMinutesCustomPromptD242CECB",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "APIApimeetingminutescustompromptsid06E18295",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsidANYApiPermissionGenerativeAiUseCasesStackAPIApi89219E17ANYmeetingminutescustompromptsid0B50B6C9": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptD242CECB",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456890123:",
+              {
+                "Ref": "APIApiFFA96F67",
+              },
+              "/",
+              {
+                "Ref": "APIApiDeploymentStageapiCD55D117",
+              },
+              "/*/meeting-minutes/custom-prompts/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsidANYApiPermissionTestGenerativeAiUseCasesStackAPIApi89219E17ANYmeetingminutescustompromptsid07691C07": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptD242CECB",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456890123:",
+              {
+                "Ref": "APIApiFFA96F67",
+              },
+              "/test-invoke-stage/*/meeting-minutes/custom-prompts/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsidOPTIONS5F023E7C": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "APIApimeetingminutescustompromptsid06E18295",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
       "UpdateReplacePolicy": "Delete",
     },
     "APIApipredict6CA3C413": {
@@ -13106,12 +13530,14 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
                 "dynamodb:DescribeTable",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "DatabaseStatsTable9C709761",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseStatsTable9C709761",
+                    "Arn",
+                  ],
+                },
+              ],
             },
             {
               "Action": [
@@ -13119,12 +13545,14 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
                 "dynamodb:GetShardIterator",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "DatabaseStatsTable9C709761",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseStatsTable9C709761",
+                    "Arn",
+                  ],
+                },
+              ],
             },
           ],
           "Version": "2012-10-17",
@@ -15839,12 +16267,14 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
                 "dynamodb:DescribeTable",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "DatabaseStatsTable9C709761",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseStatsTable9C709761",
+                    "Arn",
+                  ],
+                },
+              ],
             },
             {
               "Action": [
@@ -15852,12 +16282,14 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
                 "dynamodb:GetShardIterator",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "DatabaseStatsTable9C709761",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseStatsTable9C709761",
+                    "Arn",
+                  ],
+                },
+              ],
             },
           ],
           "Version": "2012-10-17",
@@ -16840,6 +17272,184 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
         ],
       },
       "Type": "AWS::IAM::Policy",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIMeetingMinutesCustomPromptD242CECB": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "APIMeetingMinutesCustomPromptServiceRoleDefaultPolicy02FCBCD5",
+        "APIMeetingMinutesCustomPromptServiceRoleE996AECF",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456890123-us-east-1",
+          "S3Key": "HASH-REPLACED.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "TABLE_NAME": {
+              "Ref": "DatabaseTableF104A135",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptServiceRoleE996AECF",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 900,
+        "VpcConfig": {
+          "SecurityGroupIds": [
+            {
+              "Fn::GetAtt": [
+                "LambdaSeurityGroup14B5161A",
+                "GroupId",
+              ],
+            },
+          ],
+          "SubnetIds": [
+            {
+              "Fn::ImportValue": "ClosedNetworkStack:ExportsOutputRefClosedVpcisolatedSubnet1Subnet2EF6D3F36370B312",
+            },
+            {
+              "Fn::ImportValue": "ClosedNetworkStack:ExportsOutputRefClosedVpcisolatedSubnet2SubnetB169C8D3D828FC40",
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Function",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIMeetingMinutesCustomPromptServiceRoleDefaultPolicy02FCBCD5": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseTableF104A135",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "DatabaseTableF104A135",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseTableF104A135",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "DatabaseTableF104A135",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "APIMeetingMinutesCustomPromptServiceRoleDefaultPolicy02FCBCD5",
+        "Roles": [
+          {
+            "Ref": "APIMeetingMinutesCustomPromptServiceRoleE996AECF",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIMeetingMinutesCustomPromptServiceRoleE996AECF": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
       "UpdateReplacePolicy": "Delete",
     },
     "APIOptimizePromptFunctionC14E6D1B": {
@@ -18288,6 +18898,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
           ],
         },
         "Runtime": "python3.9",
+        "Timeout": 600,
       },
       "Type": "AWS::Lambda::Function",
       "UpdateReplacePolicy": "Delete",
@@ -18534,6 +19145,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
           ],
         },
         "Runtime": "python3.9",
+        "Timeout": 600,
       },
       "Type": "AWS::Lambda::Function",
       "UpdateReplacePolicy": "Delete",
@@ -18747,6 +19359,10 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
     },
     "ApiBuildWeb746ABF13": {
       "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "ApiBuildWebProjectRoleDefaultPolicyEA537DDE",
+        "ApiBuildWebProjectRole8A770CFE",
+      ],
       "Properties": {
         "ServiceToken": {
           "Fn::GetAtt": [
@@ -18754,6 +19370,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
             "Arn",
           ],
         },
+        "assetBucketName": "cdk-hnb659fds-assets-123456890123-us-east-1",
         "buildCommands": [
           "npm ci",
           "npm run web:build",
@@ -18761,7 +19378,10 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
         "codeBuildProjectName": {
           "Ref": "ApiBuildWebProjectDF2CE9D0",
         },
-        "destinationBucketName": "cdk-hnb659fds-assets-123456890123-us-east-1",
+        "destinationBucketName": {
+          "Fn::ImportValue": "ClosedNetworkStack:ExportsOutputRefClosedWebWebBucket6C6180EC94FAE0A6",
+        },
+        "destinationKeyPrefix": "/",
         "environment": {
           "NODE_OPTIONS": "--max-old-space-size=4096",
           "VITE_APP_AGENT_CORE_AGENT_BUILDER_ENABLED": "true",
@@ -18875,6 +19495,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
           "VITE_APP_RAG_ENABLED": "true",
           "VITE_APP_RAG_KNOWLEDGE_BASE_ENABLED": "true",
           "VITE_APP_REGION": "us-east-1",
+          "VITE_APP_RESEARCH_AGENT_ENABLED": "false",
           "VITE_APP_SAMLAUTH_ENABLED": "false",
           "VITE_APP_SAML_COGNITO_DOMAIN_NAME": "",
           "VITE_APP_SAML_COGNITO_FEDERATED_IDENTITY_PROVIDER_NAME": "",
@@ -18918,54 +19539,6 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
         "workingDirectory": "..",
       },
       "Type": "Custom::CDKNodejsBuild",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "ApiBuildWebDeployAwsCliLayer187512BE": {
-      "DeletionPolicy": "Delete",
-      "DependsOn": [
-        "ApiBuildWeb746ABF13",
-      ],
-      "Properties": {
-        "Content": {
-          "S3Bucket": "cdk-hnb659fds-assets-123456890123-us-east-1",
-          "S3Key": "HASH-REPLACED.zip",
-        },
-        "Description": "/opt/awscli/aws",
-      },
-      "Type": "AWS::Lambda::LayerVersion",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "ApiBuildWebDeployCustomResource512MiBE7E7D353": {
-      "DeletionPolicy": "Delete",
-      "DependsOn": [
-        "ApiBuildWeb746ABF13",
-      ],
-      "Properties": {
-        "DestinationBucketName": {
-          "Fn::ImportValue": "ClosedNetworkStack:ExportsOutputRefClosedWebWebBucket6C6180EC94FAE0A6",
-        },
-        "OutputObjectKeys": true,
-        "Prune": true,
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB6723FB92",
-            "Arn",
-          ],
-        },
-        "SourceBucketNames": [
-          "cdk-hnb659fds-assets-123456890123-us-east-1",
-        ],
-        "SourceObjectKeys": [
-          {
-            "Fn::GetAtt": [
-              "ApiBuildWeb746ABF13",
-              "destinationObjectKey",
-            ],
-          },
-        ],
-        "WaitForDistributionInvalidation": true,
-      },
-      "Type": "Custom::CDKBucketDeployment",
       "UpdateReplacePolicy": "Delete",
     },
     "ApiBuildWebProjectDF2CE9D0": {
@@ -19013,15 +19586,15 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
         "ls -la",
         "cd \\"$current_dir\\"",
         "cd \\"$outputSourceDirectory\\"",
-        "zip -r output.zip ./",
-        "aws s3 cp output.zip \\"s3://$destinationBucketName/$destinationObjectKey\\"",
-        "\\nif [[ $outputEnvFile == \\"true\\" ]]\\nthen\\n  # Split the comma-separated string into an array\\n  for var_name in \${envNames//,/ }\\n  do\\n      echo \\"Element: $var_name\\"\\n      var_value=\\"\${!var_name}\\"\\n      echo \\"$var_name=$var_value\\" >> tmp.env\\n  done\\n\\n  aws s3 cp tmp.env \\"s3://$destinationBucketName/$envFileKey\\"\\nfi\\n              "
+        "aws s3 sync . \\"s3://$destinationBucketName/$destinationKeyPrefix\\" --delete",
+        "\\nif [[ -n \\"$distributionId\\" ]]\\nthen\\nINVALIDATION_OUTPUT=$(aws cloudfront create-invalidation --distribution-id \\"$distributionId\\" --paths \\"$distributionPath\\" --output json)\\nINVALIDATION_ID=$(echo \\"$INVALIDATION_OUTPUT\\" | jq -r '.Invalidation.Id')\\naws cloudfront wait invalidation-completed --distribution-id \\"$distributionId\\" --id \\"$INVALIDATION_ID\\"\\nfi\\n",
+        "\\nif [[ $outputEnvFile == \\"true\\" ]]\\nthen\\n  # Split the comma-separated string into an array\\n  for var_name in \${envNames//,/ }\\n  do\\n      echo \\"Element: $var_name\\"\\n      var_value=\\"\${!var_name}\\"\\n      echo \\"$var_name=$var_value\\" >> tmp.env\\n  done\\n\\n  aws s3 cp tmp.env \\"s3://$assetBucketName/$envFileKey\\"\\nfi\\n              "
       ]
     },
     "post_build": {
       "commands": [
         "echo Build completed on \`date\`",
-        "\\nSTATUS='SUCCESS'\\nif [ $CODEBUILD_BUILD_SUCCEEDING -ne 1 ] # Test if the build is failing\\nthen\\nSTATUS='FAILED'\\nREASON=\\"NodejsBuild failed. See CloudWatch Log stream for the detailed reason: \\nhttps://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/\\\\$252Faws\\\\$252Fcodebuild\\\\$252F$projectName/log-events/$CODEBUILD_LOG_PATH\\"\\nfi\\ncat <<EOF > payload.json\\n{\\n  \\"StackId\\": \\"$stackId\\",\\n  \\"RequestId\\": \\"$requestId\\",\\n  \\"LogicalResourceId\\":\\"$logicalResourceId\\",\\n  \\"PhysicalResourceId\\": \\"$logicalResourceId\\",\\n  \\"Status\\": \\"$STATUS\\",\\n  \\"Reason\\": \\"$REASON\\",\\n  \\"Data\\": {\\n    \\"destinationObjectKey\\": \\"$destinationObjectKey\\",\\n    \\"envFileKey\\": \\"$envFileKey\\"\\n  }\\n}\\nEOF\\ncurl -v -i -X PUT -H 'Content-Type:' -d \\"@payload.json\\" \\"$responseURL\\"\\n              "
+        "\\nSTATUS='SUCCESS'\\nif [ $CODEBUILD_BUILD_SUCCEEDING -ne 1 ] # Test if the build is failing\\nthen\\nSTATUS='FAILED'\\nREASON=\\"NodejsBuild failed. See CloudWatch Log stream for the detailed reason: \\nhttps://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/\\\\$252Faws\\\\$252Fcodebuild\\\\$252F$projectName/log-events/$CODEBUILD_LOG_PATH\\"\\nfi\\ncat <<EOF > payload.json\\n{\\n  \\"StackId\\": \\"$stackId\\",\\n  \\"RequestId\\": \\"$requestId\\",\\n  \\"LogicalResourceId\\":\\"$logicalResourceId\\",\\n  \\"PhysicalResourceId\\": \\"$logicalResourceId\\",\\n  \\"Status\\": \\"$STATUS\\",\\n  \\"Reason\\": \\"$REASON\\",\\n  \\"Data\\": {\\n    \\"envFileKey\\": \\"$envFileKey\\"\\n  }\\n}\\nEOF\\ncurl -i -X PUT -H 'Content-Type:' -d \\"@payload.json\\" \\"$responseURL\\"\\n              "
       ]
     }
   }
@@ -19128,37 +19701,6 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
                 "s3:GetObject*",
                 "s3:GetBucket*",
                 "s3:List*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":s3:::cdk-hnb659fds-assets-123456890123-us-east-1",
-                    ],
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":s3:::cdk-hnb659fds-assets-123456890123-us-east-1/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
                 "s3:DeleteObject*",
                 "s3:PutObject",
                 "s3:PutObjectLegalHold",
@@ -19166,6 +19708,30 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
                 "s3:PutObjectTagging",
                 "s3:PutObjectVersionTagging",
                 "s3:Abort*",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::ImportValue": "ClosedNetworkStack:ExportsOutputFnGetAttClosedWebWebBucket6C6180ECArn51D7CA47",
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::ImportValue": "ClosedNetworkStack:ExportsOutputFnGetAttClosedWebWebBucket6C6180ECArn51D7CA47",
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
               ],
               "Effect": "Allow",
               "Resource": [
@@ -19754,157 +20320,6 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
       "Type": "AWS::IAM::Policy",
       "UpdateReplacePolicy": "Delete",
     },
-    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB6723FB92": {
-      "DeletionPolicy": "Delete",
-      "DependsOn": [
-        "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726",
-        "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1",
-      ],
-      "Properties": {
-        "Code": {
-          "S3Bucket": "cdk-hnb659fds-assets-123456890123-us-east-1",
-          "S3Key": "HASH-REPLACED.zip",
-        },
-        "Environment": {
-          "Variables": {
-            "AWS_CA_BUNDLE": "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
-          },
-        },
-        "Handler": "index.handler",
-        "Layers": [
-          {
-            "Ref": "ApiBuildWebDeployAwsCliLayer187512BE",
-          },
-        ],
-        "MemorySize": 512,
-        "Role": {
-          "Fn::GetAtt": [
-            "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1",
-            "Arn",
-          ],
-        },
-        "Runtime": "python3.13",
-        "Timeout": 900,
-      },
-      "Type": "AWS::Lambda::Function",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1": {
-      "DeletionPolicy": "Delete",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com",
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition",
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-              ],
-            ],
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Role",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726": {
-      "DeletionPolicy": "Delete",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject*",
-                "s3:GetBucket*",
-                "s3:List*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":s3:::cdk-hnb659fds-assets-123456890123-us-east-1",
-                    ],
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":s3:::cdk-hnb659fds-assets-123456890123-us-east-1/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
-                "s3:GetObject*",
-                "s3:GetBucket*",
-                "s3:List*",
-                "s3:DeleteObject*",
-                "s3:PutObject",
-                "s3:PutObjectLegalHold",
-                "s3:PutObjectRetention",
-                "s3:PutObjectTagging",
-                "s3:PutObjectVersionTagging",
-                "s3:Abort*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::ImportValue": "ClosedNetworkStack:ExportsOutputFnGetAttClosedWebWebBucket6C6180ECArn51D7CA47",
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::ImportValue": "ClosedNetworkStack:ExportsOutputFnGetAttClosedWebWebBucket6C6180ECArn51D7CA47",
-                      },
-                      "/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726",
-        "Roles": [
-          {
-            "Ref": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-      "UpdateReplacePolicy": "Delete",
-    },
     "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
       "DeletionPolicy": "Delete",
       "DependsOn": [
@@ -20158,7 +20573,7 @@ exports[`GenerativeAiUseCases matches the snapshot (closed network mode) 6`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs20.x",
+        "Runtime": "nodejs22.x",
         "Timeout": 300,
       },
       "Type": "AWS::Lambda::Function",
@@ -25516,6 +25931,36 @@ exports[`GenerativeAiUseCases matches the snapshot 2`] = `
       "Type": "Custom::OssIndex",
       "UpdateReplacePolicy": "Delete",
     },
+    "WebCrawlerDataSource": {
+      "Properties": {
+        "DataSourceConfiguration": {
+          "Type": "WEB",
+          "WebConfiguration": {
+            "CrawlerConfiguration": {
+              "CrawlerLimits": {
+                "MaxPages": 100,
+                "RateLimit": 300,
+              },
+              "Scope": "HOST_ONLY",
+            },
+            "SourceConfiguration": {
+              "UrlConfiguration": {
+                "SeedUrls": [
+                  {
+                    "Url": "https://aws-samples.github.io/generative-ai-use-cases/en/",
+                  },
+                ],
+              },
+            },
+          },
+        },
+        "KnowledgeBaseId": {
+          "Ref": "KnowledgeBase",
+        },
+        "Name": "web-crawler-data-source",
+      },
+      "Type": "AWS::Bedrock::DataSource",
+    },
   },
   "Rules": {
     "CheckBootstrapVersion": {
@@ -26432,7 +26877,7 @@ exports[`GenerativeAiUseCases matches the snapshot 4`] = `
             "Ref": "GenericAgentCoreAgentCoreFileBucket0430DA42",
           },
           "MCP_CONFIG_PATH": "/var/task/mcp-configs/agent-builder/mcp.json",
-          "SUPPORTED_CACHE_FIELDS": "{"anthropic.claude-opus-4-5-20251101-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-5-20250929-v1:0":["messages","system","tools"],"anthropic.claude-haiku-4-5-20251001-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-1-20250805-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-3-7-sonnet-20250219-v1:0":["messages","system","tools"],"anthropic.claude-3-5-haiku-20241022-v1:0":["messages","system","tools"],"amazon.nova-premier-v1:0":["messages","system"],"amazon.nova-pro-v1:0":["messages","system"],"amazon.nova-lite-v1:0":["messages","system"],"amazon.nova-micro-v1:0":["messages","system"],"amazon.nova-2-lite-v1:0":["messages","system"]}",
+          "SUPPORTED_CACHE_FIELDS": "{"anthropic.claude-opus-4-6-v1":["messages","system","tools"],"anthropic.claude-sonnet-4-6":["messages","system","tools"],"anthropic.claude-opus-4-5-20251101-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-5-20250929-v1:0":["messages","system","tools"],"anthropic.claude-haiku-4-5-20251001-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-1-20250805-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-3-7-sonnet-20250219-v1:0":["messages","system","tools"],"anthropic.claude-3-5-haiku-20241022-v1:0":["messages","system","tools"],"amazon.nova-premier-v1:0":["messages","system"],"amazon.nova-pro-v1:0":["messages","system"],"amazon.nova-lite-v1:0":["messages","system"],"amazon.nova-micro-v1:0":["messages","system"],"amazon.nova-2-lite-v1:0":["messages","system"]}",
         },
         "NetworkConfiguration": {
           "NetworkMode": "PUBLIC",
@@ -26821,7 +27266,7 @@ exports[`GenerativeAiUseCases matches the snapshot 4`] = `
             "Ref": "GenericAgentCoreAgentCoreFileBucket0430DA42",
           },
           "MCP_CONFIG_PATH": "/var/task/mcp-configs/generic/mcp.json",
-          "SUPPORTED_CACHE_FIELDS": "{"anthropic.claude-opus-4-5-20251101-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-5-20250929-v1:0":["messages","system","tools"],"anthropic.claude-haiku-4-5-20251001-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-1-20250805-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-3-7-sonnet-20250219-v1:0":["messages","system","tools"],"anthropic.claude-3-5-haiku-20241022-v1:0":["messages","system","tools"],"amazon.nova-premier-v1:0":["messages","system"],"amazon.nova-pro-v1:0":["messages","system"],"amazon.nova-lite-v1:0":["messages","system"],"amazon.nova-micro-v1:0":["messages","system"],"amazon.nova-2-lite-v1:0":["messages","system"]}",
+          "SUPPORTED_CACHE_FIELDS": "{"anthropic.claude-opus-4-6-v1":["messages","system","tools"],"anthropic.claude-sonnet-4-6":["messages","system","tools"],"anthropic.claude-opus-4-5-20251101-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-5-20250929-v1:0":["messages","system","tools"],"anthropic.claude-haiku-4-5-20251001-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-1-20250805-v1:0":["messages","system","tools"],"anthropic.claude-opus-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-sonnet-4-20250514-v1:0":["messages","system","tools"],"anthropic.claude-3-7-sonnet-20250219-v1:0":["messages","system","tools"],"anthropic.claude-3-5-haiku-20241022-v1:0":["messages","system","tools"],"amazon.nova-premier-v1:0":["messages","system"],"amazon.nova-pro-v1:0":["messages","system"],"amazon.nova-lite-v1:0":["messages","system"],"amazon.nova-micro-v1:0":["messages","system"],"amazon.nova-2-lite-v1:0":["messages","system"]}",
         },
         "NetworkConfiguration": {
           "NetworkMode": "PUBLIC",
@@ -27131,6 +27576,11 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
         "Ref": "AuthUserPoolclientA74673A9",
       },
     },
+    "FileBucketName": {
+      "Value": {
+        "Ref": "APIFileBucket8FB29855",
+      },
+    },
     "Flows": {
       "Value": "W10=",
     },
@@ -27349,7 +27799,7 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
       "Type": "AWS::IAM::Role",
       "UpdateReplacePolicy": "Delete",
     },
-    "APIApiDeployment3A5021234db71f4ccf16e49a8440e8926bf1f516": {
+    "APIApiDeployment3A502123be7d91bf5fd3da07772343d3d13ce264": {
       "DeletionPolicy": "Delete",
       "DependsOn": [
         "APIApiApi4XXDCF913C8",
@@ -27392,6 +27842,14 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
         "APIApiimagegenerate70662BCD",
         "APIApiimageOPTIONSA57099DB",
         "APIApiimage6FBCA1DF",
+        "APIApimeetingminutescustompromptsidANY52BC144A",
+        "APIApimeetingminutescustompromptsidOPTIONS5F023E7C",
+        "APIApimeetingminutescustompromptsid06E18295",
+        "APIApimeetingminutescustompromptsANYE6832501",
+        "APIApimeetingminutescustompromptsOPTIONS4DF82839",
+        "APIApimeetingminutescustomprompts5F46E76F",
+        "APIApimeetingminutesOPTIONSAE8DC0E7",
+        "APIApimeetingminutesE9413A2D",
         "APIApiOPTIONSE134DC36",
         "APIApipredictOPTIONS9065A8D6",
         "APIApipredictPOST376D7D2E",
@@ -27511,7 +27969,7 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
       ],
       "Properties": {
         "DeploymentId": {
-          "Ref": "APIApiDeployment3A5021234db71f4ccf16e49a8440e8926bf1f516",
+          "Ref": "APIApiDeployment3A502123be7d91bf5fd3da07772343d3d13ce264",
         },
         "RestApiId": {
           "Ref": "APIApiFFA96F67",
@@ -29754,6 +30212,391 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
         },
       },
       "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutesE9413A2D": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "APIApiFFA96F67",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "meeting-minutes",
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutesOPTIONSAE8DC0E7": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "APIApimeetingminutesE9413A2D",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustomprompts5F46E76F": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ParentId": {
+          "Ref": "APIApimeetingminutesE9413A2D",
+        },
+        "PathPart": "custom-prompts",
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsANYApiPermissionGenerativeAiUseCasesStackAPIApi89219E17ANYmeetingminutescustomprompts97A1F0B6": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptD242CECB",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456890123:",
+              {
+                "Ref": "APIApiFFA96F67",
+              },
+              "/",
+              {
+                "Ref": "APIApiDeploymentStageapiCD55D117",
+              },
+              "/*/meeting-minutes/custom-prompts",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsANYApiPermissionTestGenerativeAiUseCasesStackAPIApi89219E17ANYmeetingminutescustomprompts846A6265": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptD242CECB",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456890123:",
+              {
+                "Ref": "APIApiFFA96F67",
+              },
+              "/test-invoke-stage/*/meeting-minutes/custom-prompts",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsANYE6832501": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AuthorizationType": "COGNITO_USER_POOLS",
+        "AuthorizerId": {
+          "Ref": "APIAuthorizer9DCC037B",
+        },
+        "HttpMethod": "ANY",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "APIMeetingMinutesCustomPromptD242CECB",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "APIApimeetingminutescustomprompts5F46E76F",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsOPTIONS4DF82839": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "APIApimeetingminutescustomprompts5F46E76F",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsid06E18295": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ParentId": {
+          "Ref": "APIApimeetingminutescustomprompts5F46E76F",
+        },
+        "PathPart": "{id}",
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsidANY52BC144A": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AuthorizationType": "COGNITO_USER_POOLS",
+        "AuthorizerId": {
+          "Ref": "APIAuthorizer9DCC037B",
+        },
+        "HttpMethod": "ANY",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "APIMeetingMinutesCustomPromptD242CECB",
+                    "Arn",
+                  ],
+                },
+                "/invocations",
+              ],
+            ],
+          },
+        },
+        "ResourceId": {
+          "Ref": "APIApimeetingminutescustompromptsid06E18295",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsidANYApiPermissionGenerativeAiUseCasesStackAPIApi89219E17ANYmeetingminutescustompromptsid0B50B6C9": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptD242CECB",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456890123:",
+              {
+                "Ref": "APIApiFFA96F67",
+              },
+              "/",
+              {
+                "Ref": "APIApiDeploymentStageapiCD55D117",
+              },
+              "/*/meeting-minutes/custom-prompts/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsidANYApiPermissionTestGenerativeAiUseCasesStackAPIApi89219E17ANYmeetingminutescustompromptsid07691C07": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptD242CECB",
+            "Arn",
+          ],
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":execute-api:us-east-1:123456890123:",
+              {
+                "Ref": "APIApiFFA96F67",
+              },
+              "/test-invoke-stage/*/meeting-minutes/custom-prompts/*",
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIApimeetingminutescustompromptsidOPTIONS5F023E7C": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "Integration": {
+          "IntegrationResponses": [
+            {
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+              },
+              "StatusCode": "204",
+            },
+          ],
+          "RequestTemplates": {
+            "application/json": "{ statusCode: 200 }",
+          },
+          "Type": "MOCK",
+        },
+        "MethodResponses": [
+          {
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true,
+              "method.response.header.Access-Control-Allow-Origin": true,
+            },
+            "StatusCode": "204",
+          },
+        ],
+        "ResourceId": {
+          "Ref": "APIApimeetingminutescustompromptsid06E18295",
+        },
+        "RestApiId": {
+          "Ref": "APIApiFFA96F67",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
       "UpdateReplacePolicy": "Delete",
     },
     "APIApipredict6CA3C413": {
@@ -35553,12 +36396,14 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
                 "dynamodb:DescribeTable",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "DatabaseStatsTable9C709761",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseStatsTable9C709761",
+                    "Arn",
+                  ],
+                },
+              ],
             },
             {
               "Action": [
@@ -35566,12 +36411,14 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
                 "dynamodb:GetShardIterator",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "DatabaseStatsTable9C709761",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseStatsTable9C709761",
+                    "Arn",
+                  ],
+                },
+              ],
             },
           ],
           "Version": "2012-10-17",
@@ -37836,12 +38683,14 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
                 "dynamodb:DescribeTable",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "DatabaseStatsTable9C709761",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseStatsTable9C709761",
+                    "Arn",
+                  ],
+                },
+              ],
             },
             {
               "Action": [
@@ -37849,12 +38698,14 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
                 "dynamodb:GetShardIterator",
               ],
               "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "DatabaseStatsTable9C709761",
-                  "Arn",
-                ],
-              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseStatsTable9C709761",
+                    "Arn",
+                  ],
+                },
+              ],
             },
           ],
           "Version": "2012-10-17",
@@ -38657,6 +39508,154 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
         ],
       },
       "Type": "AWS::IAM::Policy",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIMeetingMinutesCustomPromptD242CECB": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "APIMeetingMinutesCustomPromptServiceRoleDefaultPolicy02FCBCD5",
+        "APIMeetingMinutesCustomPromptServiceRoleE996AECF",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": "cdk-hnb659fds-assets-123456890123-us-east-1",
+          "S3Key": "HASH-REPLACED.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "TABLE_NAME": {
+              "Ref": "DatabaseTableF104A135",
+            },
+          },
+        },
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "APIMeetingMinutesCustomPromptServiceRoleE996AECF",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 900,
+      },
+      "Type": "AWS::Lambda::Function",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIMeetingMinutesCustomPromptServiceRoleDefaultPolicy02FCBCD5": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "dynamodb:BatchGetItem",
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:Scan",
+                "dynamodb:ConditionCheckItem",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:DescribeTable",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseTableF104A135",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "DatabaseTableF104A135",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "dynamodb:GetRecords",
+                "dynamodb:GetShardIterator",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DatabaseTableF104A135",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "DatabaseTableF104A135",
+                          "Arn",
+                        ],
+                      },
+                      "/index/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "APIMeetingMinutesCustomPromptServiceRoleDefaultPolicy02FCBCD5",
+        "Roles": [
+          {
+            "Ref": "APIMeetingMinutesCustomPromptServiceRoleE996AECF",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "APIMeetingMinutesCustomPromptServiceRoleE996AECF": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
       "UpdateReplacePolicy": "Delete",
     },
     "APIOptimizePromptFunctionC14E6D1B": {
@@ -39865,6 +40864,7 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
           ],
         },
         "Runtime": "python3.9",
+        "Timeout": 600,
       },
       "Type": "AWS::Lambda::Function",
       "UpdateReplacePolicy": "Delete",
@@ -40111,6 +41111,7 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
           ],
         },
         "Runtime": "python3.9",
+        "Timeout": 600,
       },
       "Type": "AWS::Lambda::Function",
       "UpdateReplacePolicy": "Delete",
@@ -40324,6 +41325,10 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
     },
     "ApiBuildWeb746ABF13": {
       "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "ApiBuildWebProjectRoleDefaultPolicyEA537DDE",
+        "ApiBuildWebProjectRole8A770CFE",
+      ],
       "Properties": {
         "ServiceToken": {
           "Fn::GetAtt": [
@@ -40331,6 +41336,7 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
             "Arn",
           ],
         },
+        "assetBucketName": "cdk-hnb659fds-assets-123456890123-us-east-1",
         "buildCommands": [
           "npm ci",
           "npm run web:build",
@@ -40338,7 +41344,13 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
         "codeBuildProjectName": {
           "Ref": "ApiBuildWebProjectDF2CE9D0",
         },
-        "destinationBucketName": "cdk-hnb659fds-assets-123456890123-us-east-1",
+        "destinationBucketName": {
+          "Ref": "ApiWebS3Bucket26EF98D6",
+        },
+        "destinationKeyPrefix": "/",
+        "distributionId": {
+          "Ref": "ApiWebCloudFrontDistributionA115FBC3",
+        },
         "environment": {
           "NODE_OPTIONS": "--max-old-space-size=4096",
           "VITE_APP_AGENT_CORE_AGENT_BUILDER_ENABLED": "true",
@@ -40452,6 +41464,7 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
           "VITE_APP_RAG_ENABLED": "true",
           "VITE_APP_RAG_KNOWLEDGE_BASE_ENABLED": "true",
           "VITE_APP_REGION": "us-east-1",
+          "VITE_APP_RESEARCH_AGENT_ENABLED": "false",
           "VITE_APP_SAMLAUTH_ENABLED": "false",
           "VITE_APP_SAML_COGNITO_DOMAIN_NAME": "",
           "VITE_APP_SAML_COGNITO_FEDERATED_IDENTITY_PROVIDER_NAME": "",
@@ -40495,57 +41508,6 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
         "workingDirectory": "..",
       },
       "Type": "Custom::CDKNodejsBuild",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "ApiBuildWebDeployAwsCliLayer187512BE": {
-      "DeletionPolicy": "Delete",
-      "DependsOn": [
-        "ApiBuildWeb746ABF13",
-      ],
-      "Properties": {
-        "Content": {
-          "S3Bucket": "cdk-hnb659fds-assets-123456890123-us-east-1",
-          "S3Key": "HASH-REPLACED.zip",
-        },
-        "Description": "/opt/awscli/aws",
-      },
-      "Type": "AWS::Lambda::LayerVersion",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "ApiBuildWebDeployCustomResource512MiBE7E7D353": {
-      "DeletionPolicy": "Delete",
-      "DependsOn": [
-        "ApiBuildWeb746ABF13",
-      ],
-      "Properties": {
-        "DestinationBucketName": {
-          "Ref": "ApiWebS3Bucket26EF98D6",
-        },
-        "DistributionId": {
-          "Ref": "ApiWebCloudFrontDistributionA115FBC3",
-        },
-        "OutputObjectKeys": true,
-        "Prune": true,
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB6723FB92",
-            "Arn",
-          ],
-        },
-        "SourceBucketNames": [
-          "cdk-hnb659fds-assets-123456890123-us-east-1",
-        ],
-        "SourceObjectKeys": [
-          {
-            "Fn::GetAtt": [
-              "ApiBuildWeb746ABF13",
-              "destinationObjectKey",
-            ],
-          },
-        ],
-        "WaitForDistributionInvalidation": true,
-      },
-      "Type": "Custom::CDKBucketDeployment",
       "UpdateReplacePolicy": "Delete",
     },
     "ApiBuildWebProjectDF2CE9D0": {
@@ -40593,15 +41555,15 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
         "ls -la",
         "cd \\"$current_dir\\"",
         "cd \\"$outputSourceDirectory\\"",
-        "zip -r output.zip ./",
-        "aws s3 cp output.zip \\"s3://$destinationBucketName/$destinationObjectKey\\"",
-        "\\nif [[ $outputEnvFile == \\"true\\" ]]\\nthen\\n  # Split the comma-separated string into an array\\n  for var_name in \${envNames//,/ }\\n  do\\n      echo \\"Element: $var_name\\"\\n      var_value=\\"\${!var_name}\\"\\n      echo \\"$var_name=$var_value\\" >> tmp.env\\n  done\\n\\n  aws s3 cp tmp.env \\"s3://$destinationBucketName/$envFileKey\\"\\nfi\\n              "
+        "aws s3 sync . \\"s3://$destinationBucketName/$destinationKeyPrefix\\" --delete",
+        "\\nif [[ -n \\"$distributionId\\" ]]\\nthen\\nINVALIDATION_OUTPUT=$(aws cloudfront create-invalidation --distribution-id \\"$distributionId\\" --paths \\"$distributionPath\\" --output json)\\nINVALIDATION_ID=$(echo \\"$INVALIDATION_OUTPUT\\" | jq -r '.Invalidation.Id')\\naws cloudfront wait invalidation-completed --distribution-id \\"$distributionId\\" --id \\"$INVALIDATION_ID\\"\\nfi\\n",
+        "\\nif [[ $outputEnvFile == \\"true\\" ]]\\nthen\\n  # Split the comma-separated string into an array\\n  for var_name in \${envNames//,/ }\\n  do\\n      echo \\"Element: $var_name\\"\\n      var_value=\\"\${!var_name}\\"\\n      echo \\"$var_name=$var_value\\" >> tmp.env\\n  done\\n\\n  aws s3 cp tmp.env \\"s3://$assetBucketName/$envFileKey\\"\\nfi\\n              "
       ]
     },
     "post_build": {
       "commands": [
         "echo Build completed on \`date\`",
-        "\\nSTATUS='SUCCESS'\\nif [ $CODEBUILD_BUILD_SUCCEEDING -ne 1 ] # Test if the build is failing\\nthen\\nSTATUS='FAILED'\\nREASON=\\"NodejsBuild failed. See CloudWatch Log stream for the detailed reason: \\nhttps://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/\\\\$252Faws\\\\$252Fcodebuild\\\\$252F$projectName/log-events/$CODEBUILD_LOG_PATH\\"\\nfi\\ncat <<EOF > payload.json\\n{\\n  \\"StackId\\": \\"$stackId\\",\\n  \\"RequestId\\": \\"$requestId\\",\\n  \\"LogicalResourceId\\":\\"$logicalResourceId\\",\\n  \\"PhysicalResourceId\\": \\"$logicalResourceId\\",\\n  \\"Status\\": \\"$STATUS\\",\\n  \\"Reason\\": \\"$REASON\\",\\n  \\"Data\\": {\\n    \\"destinationObjectKey\\": \\"$destinationObjectKey\\",\\n    \\"envFileKey\\": \\"$envFileKey\\"\\n  }\\n}\\nEOF\\ncurl -v -i -X PUT -H 'Content-Type:' -d \\"@payload.json\\" \\"$responseURL\\"\\n              "
+        "\\nSTATUS='SUCCESS'\\nif [ $CODEBUILD_BUILD_SUCCEEDING -ne 1 ] # Test if the build is failing\\nthen\\nSTATUS='FAILED'\\nREASON=\\"NodejsBuild failed. See CloudWatch Log stream for the detailed reason: \\nhttps://$AWS_REGION.console.aws.amazon.com/cloudwatch/home?region=$AWS_REGION#logsV2:log-groups/log-group/\\\\$252Faws\\\\$252Fcodebuild\\\\$252F$projectName/log-events/$CODEBUILD_LOG_PATH\\"\\nfi\\ncat <<EOF > payload.json\\n{\\n  \\"StackId\\": \\"$stackId\\",\\n  \\"RequestId\\": \\"$requestId\\",\\n  \\"LogicalResourceId\\":\\"$logicalResourceId\\",\\n  \\"PhysicalResourceId\\": \\"$logicalResourceId\\",\\n  \\"Status\\": \\"$STATUS\\",\\n  \\"Reason\\": \\"$REASON\\",\\n  \\"Data\\": {\\n    \\"envFileKey\\": \\"$envFileKey\\"\\n  }\\n}\\nEOF\\ncurl -i -X PUT -H 'Content-Type:' -d \\"@payload.json\\" \\"$responseURL\\"\\n              "
       ]
     }
   }
@@ -40708,37 +41670,6 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
                 "s3:GetObject*",
                 "s3:GetBucket*",
                 "s3:List*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":s3:::cdk-hnb659fds-assets-123456890123-us-east-1",
-                    ],
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":s3:::cdk-hnb659fds-assets-123456890123-us-east-1/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
                 "s3:DeleteObject*",
                 "s3:PutObject",
                 "s3:PutObjectLegalHold",
@@ -40746,6 +41677,58 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
                 "s3:PutObjectTagging",
                 "s3:PutObjectVersionTagging",
                 "s3:Abort*",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ApiWebS3Bucket26EF98D6",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "ApiWebS3Bucket26EF98D6",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "cloudfront:GetInvalidation",
+                "cloudfront:CreateInvalidation",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":cloudfront::123456890123:distribution/",
+                    {
+                      "Ref": "ApiWebCloudFrontDistributionA115FBC3",
+                    },
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
               ],
               "Effect": "Allow",
               "Resource": [
@@ -41353,10 +42336,6 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
         "Tags": [
           {
             "Key": "aws-cdk:auto-delete-objects",
-            "Value": "true",
-          },
-          {
-            "Key": "aws-cdk:cr-owned:656af005",
             "Value": "true",
           },
         ],
@@ -42267,171 +43246,6 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
       "Type": "AWS::IAM::Policy",
       "UpdateReplacePolicy": "Delete",
     },
-    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB6723FB92": {
-      "DeletionPolicy": "Delete",
-      "DependsOn": [
-        "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726",
-        "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1",
-      ],
-      "Properties": {
-        "Code": {
-          "S3Bucket": "cdk-hnb659fds-assets-123456890123-us-east-1",
-          "S3Key": "HASH-REPLACED.zip",
-        },
-        "Environment": {
-          "Variables": {
-            "AWS_CA_BUNDLE": "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
-          },
-        },
-        "Handler": "index.handler",
-        "Layers": [
-          {
-            "Ref": "ApiBuildWebDeployAwsCliLayer187512BE",
-          },
-        ],
-        "MemorySize": 512,
-        "Role": {
-          "Fn::GetAtt": [
-            "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1",
-            "Arn",
-          ],
-        },
-        "Runtime": "python3.13",
-        "Timeout": 900,
-      },
-      "Type": "AWS::Lambda::Function",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1": {
-      "DeletionPolicy": "Delete",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": "sts:AssumeRole",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "lambda.amazonaws.com",
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "ManagedPolicyArns": [
-          {
-            "Fn::Join": [
-              "",
-              [
-                "arn:",
-                {
-                  "Ref": "AWS::Partition",
-                },
-                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-              ],
-            ],
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Role",
-      "UpdateReplacePolicy": "Delete",
-    },
-    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726": {
-      "DeletionPolicy": "Delete",
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "s3:GetObject*",
-                "s3:GetBucket*",
-                "s3:List*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":s3:::cdk-hnb659fds-assets-123456890123-us-east-1",
-                    ],
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "arn:",
-                      {
-                        "Ref": "AWS::Partition",
-                      },
-                      ":s3:::cdk-hnb659fds-assets-123456890123-us-east-1/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
-                "s3:GetObject*",
-                "s3:GetBucket*",
-                "s3:List*",
-                "s3:DeleteObject*",
-                "s3:PutObject",
-                "s3:PutObjectLegalHold",
-                "s3:PutObjectRetention",
-                "s3:PutObjectTagging",
-                "s3:PutObjectVersionTagging",
-                "s3:Abort*",
-              ],
-              "Effect": "Allow",
-              "Resource": [
-                {
-                  "Fn::GetAtt": [
-                    "ApiWebS3Bucket26EF98D6",
-                    "Arn",
-                  ],
-                },
-                {
-                  "Fn::Join": [
-                    "",
-                    [
-                      {
-                        "Fn::GetAtt": [
-                          "ApiWebS3Bucket26EF98D6",
-                          "Arn",
-                        ],
-                      },
-                      "/*",
-                    ],
-                  ],
-                },
-              ],
-            },
-            {
-              "Action": [
-                "cloudfront:GetInvalidation",
-                "cloudfront:CreateInvalidation",
-              ],
-              "Effect": "Allow",
-              "Resource": "*",
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726",
-        "Roles": [
-          {
-            "Ref": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-      "UpdateReplacePolicy": "Delete",
-    },
     "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
       "DeletionPolicy": "Delete",
       "DependsOn": [
@@ -42667,7 +43481,7 @@ exports[`GenerativeAiUseCases matches the snapshot 6`] = `
             "Arn",
           ],
         },
-        "Runtime": "nodejs20.x",
+        "Runtime": "nodejs22.x",
         "Timeout": 300,
       },
       "Type": "AWS::Lambda::Function",

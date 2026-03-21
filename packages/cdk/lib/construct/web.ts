@@ -11,7 +11,7 @@ import {
   HeadersReferrerPolicy,
   IDistribution,
 } from 'aws-cdk-lib/aws-cloudfront';
-import { NodejsBuild } from 'deploy-time-build';
+import { NodejsBuild } from '@cdklabs/deploy-time-build';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { ARecord, HostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
@@ -68,6 +68,8 @@ export interface WebProps {
   readonly agentCoreAgentBuilderRuntime?: AgentCoreConfiguration;
   readonly agentCoreExternalRuntimes: AgentCoreConfiguration[];
   readonly agentCoreRegion?: string;
+  readonly researchAgentEnabled: boolean;
+  readonly researchAgentRuntime?: AgentCoreConfiguration;
   readonly brandingConfig?: {
     logoPath?: string;
     title?: string;
@@ -255,7 +257,7 @@ export class Web extends Construct {
       outputSourceDirectory: './packages/web/dist',
       buildCommands: ['npm ci', 'npm run web:build'],
       buildEnvironment: {
-        NODE_OPTIONS: '--max-old-space-size=4096', // Memory for CodeBuild at deployment
+        NODE_OPTIONS: '--max-old-space-size=4096',
         VITE_APP_API_ENDPOINT: props.apiEndpointUrl,
         VITE_APP_REGION: Stack.of(this).region,
         VITE_APP_USER_POOL_ID: props.userPoolId,
@@ -305,6 +307,10 @@ export class Web extends Construct {
         ),
         VITE_APP_AGENT_CORE_EXTERNAL_RUNTIMES: JSON.stringify(
           props.agentCoreExternalRuntimes
+        ),
+        VITE_APP_RESEARCH_AGENT_ENABLED: props.researchAgentEnabled.toString(),
+        VITE_APP_RESEARCH_AGENT_RUNTIME: JSON.stringify(
+          props.researchAgentRuntime
         ),
         VITE_APP_BRANDING_LOGO_PATH: props.brandingConfig?.logoPath ?? '',
         VITE_APP_BRANDING_TITLE: props.brandingConfig?.title ?? '',
