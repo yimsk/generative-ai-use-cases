@@ -3,6 +3,7 @@ export type HiddenUseCases = {
   summarize?: boolean;
   writer?: boolean;
   translate?: boolean;
+  realtimeTranslation?: boolean;
   webContent?: boolean;
   image?: boolean;
   video?: boolean;

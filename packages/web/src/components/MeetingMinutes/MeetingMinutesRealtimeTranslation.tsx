@@ -29,29 +29,101 @@ import {
   getRecentSegmentsContext,
 } from './MeetingMinutesContextGenerator';
 
-const getTranslationTarget = (
-  translationType: string,
+const normalizeLanguageCode = (languageCode?: string): string | undefined => {
+  return languageCode?.toLowerCase();
+};
+
+const inferLanguageFromText = (text: string): string | undefined => {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  let japaneseCount = 0;
+  let asciiCount = 0;
+
+  for (const char of trimmed) {
+    const codePoint = char.codePointAt(0) ?? 0;
+
+    if (
+      (codePoint >= 0x3040 && codePoint <= 0x30ff) ||
+      (codePoint >= 0x4e00 && codePoint <= 0x9faf)
+    ) {
+      japaneseCount += 1;
+      continue;
+    }
+
+    if (
+      (codePoint >= 0x41 && codePoint <= 0x5a) ||
+      (codePoint >= 0x61 && codePoint <= 0x7a)
+    ) {
+      asciiCount += 1;
+    }
+  }
+
+  if (japaneseCount > asciiCount && japaneseCount > 0) {
+    return 'ja-jp';
+  }
+
+  if (asciiCount > 0) {
+    return 'en-us';
+  }
+
+  return undefined;
+};
+const resolveSourceLanguage = (
+  transcripts: Transcript[],
   detectedLanguageCode: string | undefined,
   primaryLanguage: string,
   secondaryLanguage: string
+): string | undefined => {
+  const transcriptText = transcripts
+    .map((transcript) => transcript.transcript)
+    .join(' ')
+    .trim();
+
+  const inferredLanguage = inferLanguageFromText(transcriptText);
+  if (inferredLanguage) {
+    return inferredLanguage;
+  }
+
+  const normalizedDetected = normalizeLanguageCode(detectedLanguageCode);
+  const normalizedPrimary = normalizeLanguageCode(primaryLanguage);
+  const normalizedSecondary = normalizeLanguageCode(secondaryLanguage);
+
+  if (normalizedDetected === normalizedPrimary) {
+    return normalizedPrimary;
+  }
+
+  if (normalizedDetected === normalizedSecondary) {
+    return normalizedSecondary;
+  }
+
+  return normalizedDetected;
+};
+
+const getTranslationTarget = (
+  translationType: string,
+  sourceLanguageCode: string | undefined,
+  primaryLanguage: string,
+  secondaryLanguage: string
 ): string => {
-  // For unidirectional translation, always use the target language
-  if (translationType !== 'bidirectional' || !detectedLanguageCode) {
+  const normalizedSource = normalizeLanguageCode(sourceLanguageCode);
+  const normalizedPrimary = normalizeLanguageCode(primaryLanguage);
+  const normalizedSecondary = normalizeLanguageCode(secondaryLanguage);
+
+  if (translationType !== 'bidirectional' || !normalizedSource) {
     return secondaryLanguage;
   }
 
-  // For bidirectional translation with detected language:
-  // If detected language matches primary language, translate to target language
-  if (detectedLanguageCode === primaryLanguage) {
+  if (normalizedSource === normalizedPrimary) {
     return secondaryLanguage;
   }
 
-  // If detected language matches target language, translate to primary language
-  if (detectedLanguageCode === secondaryLanguage) {
+  if (normalizedSource === normalizedSecondary) {
     return primaryLanguage;
   }
 
-  // If detected language doesn't match either configured language, use target language as fallback
   return secondaryLanguage;
 };
 
@@ -76,11 +148,20 @@ interface MeetingMinutesRealtimeTranslationProps {
     micRecording: boolean;
     screenRecording: boolean;
   }) => void;
+  initialPrimaryLanguage?: string;
+  initialSecondaryLanguage?: string;
+  initialTranslationType?: string;
 }
 
 const MeetingMinutesRealtimeTranslation: React.FC<
   MeetingMinutesRealtimeTranslationProps
-> = ({ onTranscriptChange, onRecordingStateChange }) => {
+> = ({
+  onTranscriptChange,
+  onRecordingStateChange,
+  initialPrimaryLanguage = 'en-US',
+  initialSecondaryLanguage = 'ja-JP',
+  initialTranslationType = 'unidirectional',
+}) => {
   const { t } = useTranslation();
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef<boolean>(true);
@@ -116,7 +197,9 @@ const MeetingMinutesRealtimeTranslation: React.FC<
   }, [micRecording, screenRecording, onRecordingStateChange]);
 
   // Internal state management
-  const [primaryLanguage, setPrimaryLanguage] = useState('en-US');
+  const [primaryLanguage, setPrimaryLanguage] = useState(
+    initialPrimaryLanguage
+  );
   const [speakerLabel, setSpeakerLabel] = useState(false);
   const [maxSpeakers, setMaxSpeakers] = useState(4);
   const [speakers, setSpeakers] = useState('');
@@ -145,9 +228,13 @@ const MeetingMinutesRealtimeTranslation: React.FC<
 
   // Translation states - Default to enabled for realtime translation tab
   const realtimeTranslationEnabled = true; // Always enabled in this tab
-  const [translationType, setTranslationType] = useState('unidirectional');
+  const [translationType, setTranslationType] = useState<string>(
+    initialTranslationType
+  );
   const [selectedTranslationModel, setSelectedTranslationModel] = useState('');
-  const [secondaryLanguage, setSecondaryLanguage] = useState('ja-JP');
+  const [secondaryLanguage, setSecondaryLanguage] = useState(
+    initialSecondaryLanguage
+  );
 
   // Context states for translation accuracy improvement
   const [userDefinedContext, setUserDefinedContext] = useState('');
@@ -209,10 +296,17 @@ const MeetingMinutesRealtimeTranslation: React.FC<
       );
 
       try {
+        const sourceLanguage = resolveSourceLanguage(
+          segment.transcripts,
+          segment.languageCode,
+          primaryLanguage,
+          secondaryLanguage
+        );
+
         // Determine translation target language using helper function
         const targetLanguage = getTranslationTarget(
           translationType,
-          segment.languageCode,
+          sourceLanguage,
           primaryLanguage,
           secondaryLanguage
         );
@@ -926,7 +1020,12 @@ const MeetingMinutesRealtimeTranslation: React.FC<
                 // Find the translation target for this segment
                 const translationTarget = getTranslationTarget(
                   translationType,
-                  segment.languageCode,
+                  resolveSourceLanguage(
+                    segment.transcripts,
+                    segment.languageCode,
+                    primaryLanguage,
+                    secondaryLanguage
+                  ),
                   primaryLanguage,
                   secondaryLanguage
                 );

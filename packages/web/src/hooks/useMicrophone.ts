@@ -29,9 +29,30 @@ const userPoolId = import.meta.env.VITE_APP_USER_POOL_ID;
 const idPoolId = import.meta.env.VITE_APP_IDENTITY_POOL_ID;
 const providerName = `cognito-idp.${region}.amazonaws.com/${userPoolId}`;
 
+const getMicrophoneAvailabilityError = (): Error | null => {
+  if (typeof window === 'undefined') {
+    return new Error('Microphone is only available in the browser.');
+  }
+
+  if (!window.isSecureContext) {
+    return new Error(
+      'Microphone access requires HTTPS or localhost. Open the app from a secure origin and try again.'
+    );
+  }
+
+  if (!window.navigator.mediaDevices?.getUserMedia) {
+    return new Error(
+      'This browser does not provide microphone access through mediaDevices.getUserMedia.'
+    );
+  }
+
+  return null;
+};
+
 const useMicrophone = () => {
   const [micStream, setMicStream] = useState<MicrophoneStream | undefined>();
   const [recording, setRecording] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const [rawTranscripts, setRawTranscripts] = useState<
     {
       resultId: string;
@@ -76,28 +97,53 @@ const useMicrophone = () => {
   }, [rawTranscripts, language]);
 
   useEffect(() => {
-    // break if already set
     if (transcribeClient) return;
 
-    fetchAuthSession().then((session) => {
-      const token = session.tokens?.idToken?.toString();
-      // break if unauthenticated
-      if (!token) {
-        return;
-      }
+    let cancelled = false;
 
-      const transcribe = new TranscribeStreamingClient({
-        region,
-        credentials: fromCognitoIdentityPool({
-          clientConfig: { region },
-          identityPoolId: idPoolId,
-          logins: {
-            [providerName]: token,
-          },
-        }),
-      });
-      setTranscribeClient(transcribe);
-    });
+    const setupClient = async () => {
+      try {
+        const session = await fetchAuthSession();
+        const token = session.tokens?.idToken?.toString();
+        if (!token || cancelled) {
+          return;
+        }
+
+        const transcribe = new TranscribeStreamingClient({
+          region,
+          credentials: fromCognitoIdentityPool({
+            clientConfig: { region },
+            identityPoolId: idPoolId,
+            logins: {
+              [providerName]: token,
+            },
+          }),
+        });
+
+        setTranscribeClient(transcribe);
+        setError(null);
+      } catch (clientError) {
+        if (!cancelled) {
+          setError(
+            clientError instanceof Error
+              ? clientError
+              : new Error('Failed to initialize microphone client')
+          );
+        }
+      }
+    };
+
+    void setupClient();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [transcribeClient]);
+
+  useEffect(() => {
+    return () => {
+      transcribeClient?.destroy();
+    };
   }, [transcribeClient]);
 
   const startStream = async (
@@ -105,7 +151,8 @@ const useMicrophone = () => {
     languageCode?: LanguageCode,
     speakerLabel: boolean = false,
     languageOptions?: string[],
-    enableMultiLanguage: boolean = false
+    enableMultiLanguage: boolean = false,
+    mediaSampleRateHertz: number = 48000
   ) => {
     if (!transcribeClient) return;
 
@@ -125,7 +172,9 @@ const useMicrophone = () => {
     };
 
     // Best Practice: https://docs.aws.amazon.com/transcribe/latest/dg/streaming.html
-    let commandParams;
+    let commandParams: Partial<
+      ConstructorParameters<typeof StartStreamTranscriptionCommand>[0]
+    >;
 
     if (enableMultiLanguage) {
       // Multi-language identification mode (bidirectional translation)
@@ -160,7 +209,7 @@ const useMicrophone = () => {
     const command = new StartStreamTranscriptionCommand({
       ...commandParams,
       MediaEncoding: 'pcm',
-      MediaSampleRateHertz: 48000,
+      MediaSampleRateHertz: mediaSampleRateHertz,
       AudioStream: audioStream(),
       ShowSpeakerLabel: speakerLabel,
     });
@@ -169,14 +218,12 @@ const useMicrophone = () => {
       const response = await transcribeClient.send(command);
 
       if (response.TranscriptResultStream) {
-        // This snippet should be put into an async function
         for await (const event of response.TranscriptResultStream) {
-          if (
-            event.TranscriptEvent?.Transcript?.Results &&
-            event.TranscriptEvent.Transcript?.Results.length > 0
-          ) {
-            // Get multiple possible results, but this code only processes a single result
-            const result = event.TranscriptEvent.Transcript?.Results[0];
+          const results = event.TranscriptEvent?.Transcript?.Results ?? [];
+          for (const result of results) {
+            if (!result) {
+              continue;
+            }
 
             // Update Language
             if (result.LanguageCode) {
@@ -209,55 +256,41 @@ const useMicrophone = () => {
               })
             );
 
+            const normalizedResult = {
+              resultId: result.ResultId ?? `mic-${Date.now()}-${Math.random()}`,
+              startTime: result.StartTime ?? 0,
+              endTime: result.EndTime ?? 0,
+              isPartial: result.IsPartial ?? false,
+              transcripts,
+              languageCode: result.LanguageCode,
+            };
+
             setRawTranscripts((prev) => {
-              if (prev.length === 0 || !prev[prev.length - 1].isPartial) {
-                // segment is complete
-                const tmp = update(prev, {
-                  $push: [
-                    {
-                      resultId:
-                        result.ResultId ?? `mic-${Date.now()}-${Math.random()}`,
-                      startTime: result.StartTime ?? 0,
-                      endTime: result.EndTime ?? 0,
-                      isPartial: result.IsPartial ?? false,
-                      transcripts,
-                      languageCode: result.LanguageCode,
-                    },
-                  ],
+              const existingIndex = prev.findIndex(
+                (entry) => entry.resultId === normalizedResult.resultId
+              );
+
+              if (existingIndex === -1) {
+                return update(prev, {
+                  $push: [normalizedResult],
                 });
-                return tmp;
-              } else {
-                // segment is NOT complete(overrides the previous segment's transcript)
-                const tmp = update(prev, {
-                  $splice: [
-                    [
-                      prev.length - 1,
-                      1,
-                      {
-                        resultId:
-                          result.ResultId ??
-                          `mic-${Date.now()}-${Math.random()}`,
-                        startTime: result.StartTime ?? 0,
-                        endTime: result.EndTime ?? 0,
-                        isPartial: result.IsPartial ?? false,
-                        transcripts,
-                        languageCode: result.LanguageCode,
-                      },
-                    ],
-                  ],
-                });
-                return tmp;
               }
+
+              return update(prev, {
+                $splice: [[existingIndex, 1, normalizedResult]],
+              });
             });
           }
         }
       }
     } catch (error) {
+      setError(
+        error instanceof Error ? error : new Error('Speech recognition failed')
+      );
       console.error(error);
       stopTranscription();
     } finally {
       stopTranscription();
-      transcribeClient.destroy();
     }
   };
 
@@ -267,15 +300,30 @@ const useMicrophone = () => {
     languageOptions?: string[],
     enableMultiLanguage?: boolean
   ) => {
+    const availabilityError = getMicrophoneAvailabilityError();
+    if (availabilityError) {
+      setError(availabilityError);
+      return;
+    }
+
+    if (!transcribeClient) {
+      setError(new Error('Microphone is still preparing. Please try again.'));
+      return;
+    }
+
     const mic = new MicrophoneStream();
+    let audioContext: AudioContext | undefined;
     try {
+      setError(null);
       setMicStream(mic);
-      mic.setStream(
-        await window.navigator.mediaDevices.getUserMedia({
-          video: false,
-          audio: true,
-        })
-      );
+      const stream = await window.navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: true,
+      });
+      mic.setStream(stream);
+
+      audioContext = new window.AudioContext();
+      const detectedSampleRate = Math.round(audioContext.sampleRate || 48000);
 
       setRecording(true);
       await startStream(
@@ -283,11 +331,15 @@ const useMicrophone = () => {
         languageCode,
         speakerLabel,
         languageOptions,
-        enableMultiLanguage
+        enableMultiLanguage,
+        detectedSampleRate
       );
     } catch (e) {
-      console.log(e);
+      setError(
+        e instanceof Error ? e : new Error('Failed to start microphone input')
+      );
     } finally {
+      await audioContext?.close().catch(() => undefined);
       mic.stop();
       setRecording(false);
       setMicStream(undefined);
@@ -313,6 +365,8 @@ const useMicrophone = () => {
     transcriptMic,
     clearTranscripts,
     rawTranscripts,
+    error,
+    clientReady: !!transcribeClient,
   };
 };
 

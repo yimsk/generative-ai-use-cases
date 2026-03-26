@@ -20,6 +20,7 @@ const baseStackInputSchema = z.object({
       summarize: z.boolean().optional(),
       writer: z.boolean().optional(),
       translate: z.boolean().optional(),
+      realtimeTranslation: z.boolean().optional(),
       webContent: z.boolean().optional(),
       image: z.boolean().optional(),
       video: z.boolean().optional(),
