@@ -816,7 +816,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `feat(realtime): add English mode toggle`
   - Files: `packages/web/src/components/RealtimeMonitor/EnglishModeToggle.tsx`
 
-- [ ] 9. Wire monitor page (combine all components, recording lifecycle)
+- [x] 9. Wire monitor page (combine all components, recording lifecycle)
 
   **What to do**:
   - Rewrite `packages/web/src/pages/RealtimeMonitorPage.tsx` to be the full monitor page:
@@ -931,7 +931,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `feat(realtime): wire monitor page with full recording lifecycle`
   - Files: `packages/web/src/pages/RealtimeMonitorPage.tsx`
 
-- [ ] 10. Collapsible context menu during recording
+- [x] 10. Collapsible context menu during recording
 
   **What to do**:
   - Create `packages/web/src/components/RealtimeMonitor/RecordingContextMenu.tsx`:
