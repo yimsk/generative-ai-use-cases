@@ -627,7 +627,7 @@ monitor:
   english_mode: Chế độ English
   meeting_name: Tên cuộc họp
   no_topic: Đang chờ chủ đề...
-  participants: Ngườitham gia
+  participants: Người tham gia
   primary_language: Ngôn ngữ chính
   restart: Khởi động lại
   secondary_language: Ngôn ngữ phụ
@@ -646,6 +646,7 @@ navigation:
   promptOptimization: Tối ưu hóa prompt
   ragChat: RAG Chat
   realtimeTranslation: Dịch thời gian thực
+  realtimeTranslationMonitor: Màn hình dịch
   settings: Cài đặt
   speechRecognition: Nhận dạng giọng nói
   summary: Tóm tắt

@@ -663,6 +663,7 @@ navigation:
   promptOptimization: ปรับแต่ง Prompt ให้ตรงความต้องการ
   ragChat: RAG Chat
   realtimeTranslation: การแปลแบบเรียลไทม์
+  realtimeTranslationMonitor: จอแปลภาษา
   settings: ตั้งค่า
   speechRecognition: แปลงเสียงพูดเป็นข้อความ
   summary: สรุป

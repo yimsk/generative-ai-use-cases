@@ -514,6 +514,7 @@ navigation:
   promptOptimization: 프롬프트 최적화
   ragChat: RAG 채팅
   realtimeTranslation: 실시간 번역
+  realtimeTranslationMonitor: 번역 모니터
   settings: 설정
   speechRecognition: 음성 인식
   summary: 요약

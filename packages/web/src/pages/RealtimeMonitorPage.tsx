@@ -168,7 +168,7 @@ const MonitorSession: React.FC<SessionProps> = ({
     participants: config.participants,
     background: config.background,
   });
-  const { topic, isUpdating, updateTopic } = useTopicSummary({
+  const { topicJa, topicEn, isUpdating, updateTopic } = useTopicSummary({
     modelId: config.topicModel,
     targetLanguage: getLanguageNameFromCode(config.secondaryLanguage),
   });
@@ -177,10 +177,18 @@ const MonitorSession: React.FC<SessionProps> = ({
   const latestRequestedSourceRef = useRef<Record<string, string>>({});
 
   const contextString = useMemo(() => {
-    return [contextValues.meetingName, contextValues.participants, contextValues.background]
+    return [
+      contextValues.meetingName,
+      contextValues.participants,
+      contextValues.background,
+    ]
       .filter(Boolean)
       .join('\n');
-  }, [contextValues.background, contextValues.meetingName, contextValues.participants]);
+  }, [
+    contextValues.background,
+    contextValues.meetingName,
+    contextValues.participants,
+  ]);
 
   const targetLanguageName = useMemo(() => {
     return getLanguageNameFromCode(config.secondaryLanguage);
@@ -283,7 +291,8 @@ const MonitorSession: React.FC<SessionProps> = ({
         </div>
 
         <TopicBar
-          topic={topic}
+          topicJa={topicJa}
+          topicEn={topicEn}
           isUpdating={isUpdating}
           isEnglishMode={isEnglishMode}
         />
@@ -304,7 +313,8 @@ const MonitorSession: React.FC<SessionProps> = ({
         <div className="relative min-h-0 flex-1">
           <MonitorDisplay
             segments={segments}
-            topic={topic}
+            topicJa={topicJa}
+            topicEn={topicEn}
             isUpdating={isUpdating}
             isEnglishMode={isEnglishMode}
             onToggleEnglish={setIsEnglishMode}

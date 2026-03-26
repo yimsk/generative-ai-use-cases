@@ -5,7 +5,8 @@ import TranslationPanel from './TranslationPanel';
 
 type Props = {
   segments: DisplaySegment[];
-  topic: string;
+  topicJa: string;
+  topicEn: string;
   isUpdating: boolean;
   isEnglishMode: boolean;
   onToggleEnglish: (value: boolean) => void;
@@ -16,7 +17,8 @@ type Props = {
 
 const MonitorDisplay: React.FC<Props> = ({
   segments,
-  topic,
+  topicJa,
+  topicEn,
   isUpdating,
   isEnglishMode,
   onToggleEnglish,
@@ -26,6 +28,7 @@ const MonitorDisplay: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const modeLabel = isEnglishMode ? 'EN' : 'JP';
+  const displayedTopic = isEnglishMode ? topicEn : topicJa;
 
   return (
     <div className="h-full min-h-0 rounded-[32px] border border-slate-800 bg-slate-950 text-white shadow-[0_28px_80px_rgba(2,6,23,0.55)]">
@@ -76,7 +79,7 @@ const MonitorDisplay: React.FC<Props> = ({
               </span>
             </div>
             <div className="mt-2 text-lg font-medium text-white md:text-xl">
-              {topic || t('monitor.no_topic')}
+              {displayedTopic || t('monitor.no_topic')}
             </div>
           </div>
 

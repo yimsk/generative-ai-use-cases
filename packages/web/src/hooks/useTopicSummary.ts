@@ -11,19 +11,32 @@ export interface UseTopicSummaryOptions {
 
 export interface UseTopicSummaryReturn {
   topic: string;
+  topicJa: string;
+  topicEn: string;
   isUpdating: boolean;
   error: string | null;
   updateTopic: (segment: string) => void;
 }
 
-const useTopicSummary = (options: UseTopicSummaryOptions): UseTopicSummaryReturn => {
+const extractTagValue = (value: string, tag: 'ja' | 'en') => {
+  const match = value.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i'));
+  return match?.[1]?.trim() ?? '';
+};
+
+const useTopicSummary = (
+  options: UseTopicSummaryOptions
+): UseTopicSummaryReturn => {
   const { modelId, targetLanguage, debounceMs = 10000 } = options;
   const { predict } = useChatApi();
 
-  const [topic, setTopic] = useState<string>('');
+  const [topicJa, setTopicJa] = useState<string>('');
+  const [topicEn, setTopicEn] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const lastCallRef = useRef<number>(0);
+  const topic = targetLanguage.toLowerCase().includes('english')
+    ? topicEn
+    : topicJa;
 
   const updateTopic = useCallback(
     async (segment: string) => {
@@ -47,7 +60,7 @@ const useTopicSummary = (options: UseTopicSummaryOptions): UseTopicSummaryReturn
         const prompter = getPrompter(modelId);
         const systemPrompt = prompter.systemContext(id);
         const userPrompt = prompter.topicSummaryPrompt({
-          currentTopic: topic,
+          currentTopic: topicJa || topicEn,
           newSegment: segment,
           targetLanguage,
         });
@@ -80,21 +93,32 @@ const useTopicSummary = (options: UseTopicSummaryOptions): UseTopicSummaryReturn
 
         if (extracted.toLowerCase() === 'same') {
           return;
-        } else {
-          setTopic(extracted);
         }
+
+        const nextTopicJa = extractTagValue(extracted, 'ja');
+        const nextTopicEn = extractTagValue(extracted, 'en');
+
+        if (!nextTopicJa || !nextTopicEn) {
+          throw new Error('Invalid topic summary response');
+        }
+
+        setTopicJa(nextTopicJa);
+        setTopicEn(nextTopicEn);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        const errorMessage =
+          err instanceof Error ? err.message : 'Unknown error';
         setError(errorMessage);
       } finally {
         setIsUpdating(false);
       }
     },
-    [modelId, targetLanguage, debounceMs, predict, topic]
+    [modelId, targetLanguage, debounceMs, predict, topicEn, topicJa]
   );
 
   return {
     topic,
+    topicJa,
+    topicEn,
     isUpdating,
     error,
     updateTopic,

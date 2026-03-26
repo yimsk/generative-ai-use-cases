@@ -734,9 +734,10 @@ Output only the translation result enclosed in the <output></output> XML tags.`;
 <target_language>${params.targetLanguage}</target_language>
 
 Analyze whether the conversation topic has changed based on the new segment.
-If the topic has changed or is new, output the new topic in ${params.targetLanguage} enclosed in <output></output> tags.
+If the topic has changed or is new, output the new topic in BOTH Japanese and English enclosed in <output></output> tags.
+Format the response exactly as: <output><ja>Japanese topic here</ja><en>English topic here</en></output>
 If the topic has NOT changed, output exactly: <output>SAME</output>
-Output only the topic or "SAME". No explanation.`;
+Output only the XML or "SAME". No explanation.`;
   },
 };
 

@@ -24,3 +24,7 @@ Created: 2026-03-26
 - npm run web:lint passes
 - No TypeScript errors
 - No ESLint warnings
+- 2026-03-26 F1 audit: monitor route/components/hook/tests exist under packages/web; bilingual segment state and client-side context flow implemented; no localStorage or monitor-specific backend code found.
+- 2026-03-26 manual QA evidence saved in .sisyphus/evidence/final-qa/ with auth-gated screenshots and DOM capture.
+
+- 2026-03-26: Realtime monitor topic summaries now store paired ja/en values in the hook so English mode can switch topic text instantly without another LLM call.

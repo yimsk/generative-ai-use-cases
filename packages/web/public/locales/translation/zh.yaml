@@ -551,6 +551,7 @@ navigation:
   promptOptimization: 提示优化
   ragChat: RAG聊天
   realtimeTranslation: 实时翻译
+  realtimeTranslationMonitor: 翻译监视器
   settings: 设置
   speechRecognition: 语音识别
   summary: 摘要
