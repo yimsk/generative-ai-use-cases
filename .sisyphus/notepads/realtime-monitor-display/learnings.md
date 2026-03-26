@@ -144,3 +144,8 @@ const result = await predict({ model, messages, id });
 ### Verification:
 
 All 6 files have 18 keys under monitor: namespace. No existing keys were modified.
+- Added monitor layout components with shared `DisplaySegment` typing in `TranscriptSidebar.tsx` to keep sidebar/panel props aligned without new type files.
+- Reused existing locale keys (`monitor.*`, `meetingMinutes.*`) to satisfy Shopify JSX hardcoded-content lint rules in projection UI.
+- `MonitorSetup.tsx` wraps `StructuredContextForm` with parent arbitrary-variant classes to restyle its existing light inputs for the dark monitor setup without changing the shared form API.
+- Exported `textModels` from `packages/web/src/hooks/useModel.ts` so monitor setup can build native selector options while still reusing `MODELS.modelDisplayName()` for labels.
+- Validation stays lightweight: start is allowed only when primary/secondary languages differ and both model selectors have values; context fields remain optional.

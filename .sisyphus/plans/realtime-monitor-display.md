@@ -531,7 +531,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `feat(realtime): add structured context form component`
   - Files: `packages/web/src/components/RealtimeMonitor/StructuredContextForm.tsx`
 
-- [ ] 5. Monitor display layout (two-column, dark theme)
+- [x] 5. Monitor display layout (two-column, dark theme)
 
   **What to do**:
   - Create `packages/web/src/components/RealtimeMonitor/MonitorDisplay.tsx` — main projection layout:
@@ -631,7 +631,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `feat(realtime): add monitor display layout components`
   - Files: `packages/web/src/components/RealtimeMonitor/MonitorDisplay.tsx`, `TranscriptSidebar.tsx`, `TranslationPanel.tsx`
 
-- [ ] 6. Pre-recording setup screen
+- [x] 6. Pre-recording setup screen
 
   **What to do**:
   - Create `packages/web/src/components/RealtimeMonitor/MonitorSetup.tsx` — pre-recording setup view:
@@ -700,7 +700,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `feat(realtime): add pre-recording setup screen`
   - Files: `packages/web/src/components/RealtimeMonitor/MonitorSetup.tsx`
 
-- [ ] 7. Topic bar component
+- [x] 7. Topic bar component
 
   **What to do**:
   - Create `packages/web/src/components/RealtimeMonitor/TopicBar.tsx`:
@@ -763,7 +763,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `feat(realtime): add topic bar component`
   - Files: `packages/web/src/components/RealtimeMonitor/TopicBar.tsx`
 
-- [ ] 8. English mode toggle component
+- [x] 8. English mode toggle component
 
   **What to do**:
   - Create `packages/web/src/components/RealtimeMonitor/EnglishModeToggle.tsx`:

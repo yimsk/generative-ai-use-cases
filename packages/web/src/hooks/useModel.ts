@@ -118,7 +118,7 @@ const getFlows = () => {
 const flows = getFlows();
 
 // Define model objects
-const textModels = [
+export const textModels = [
   ...bedrockModelConfigs.map(
     (model) =>
       ({
