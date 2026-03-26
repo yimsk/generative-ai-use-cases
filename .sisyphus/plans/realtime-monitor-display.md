@@ -990,7 +990,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `feat(realtime): add collapsible context menu for recording`
   - Files: `packages/web/src/components/RealtimeMonitor/RecordingContextMenu.tsx`, `packages/web/src/pages/RealtimeMonitorPage.tsx` (integration)
 
-- [ ] 11. Build verification (lint + type check + build)
+- [x] 11. Build verification (lint + type check + build)
 
   **What to do**:
   - Run full verification suite:
@@ -1040,7 +1040,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `chore(realtime): fix lint and type errors`
   - Files: varies
 
-- [ ] 12. Unit tests for useTopicSummary hook
+- [x] 12. Unit tests for useTopicSummary hook
 
   **What to do**:
   - Create `packages/web/tests/use-topic-summary.test.ts`
@@ -1098,7 +1098,7 @@ Max Concurrent: 4 (Wave 1)
   - Message: `test(realtime): add useTopicSummary hook tests`
   - Files: `packages/web/tests/use-topic-summary.test.ts`
 
-- [ ] 13. Unit tests for monitor components
+- [x] 13. Unit tests for monitor components
 
   **What to do**:
   - Create `packages/web/tests/realtime-monitor.test.ts`

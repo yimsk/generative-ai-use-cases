@@ -24,7 +24,9 @@ export default defineConfig(({ mode }) => ({
   },
   resolve: { alias: { './runtimeConfig': './runtimeConfig.browser' } },
   plugins: [
-    react(),
+    react({
+      jsxRuntime: 'automatic',
+    }),
     svgr(),
     nodePolyfills({
       globals: {
@@ -84,8 +86,10 @@ export default defineConfig(({ mode }) => ({
   ],
   test: {
     name: 'use-case-builder',
-    root: './tests/use-case-builder',
-    environment: 'node',
-    setupFiles: [],
+    root: './tests',
+    include: ['**/*.test.ts'],
+    environment: 'jsdom',
+    setupFiles: ['./setupTests.ts'],
+    globals: true,
   },
 }));
