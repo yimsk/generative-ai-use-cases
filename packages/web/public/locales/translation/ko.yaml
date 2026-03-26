@@ -484,6 +484,25 @@ model:
     reasoning: 추론
     reasoning_budget: 추론 예산
     reasoning_effort: 사고 깊이
+monitor:
+  background: 배경
+  clear: 지우기
+  context_settings: 컨텍스트 설정
+  current_topic: '현재 주제:'
+  detecting_topic: 주제 감지 중...
+  edit_context: 컨텍스트 편집
+  english_mode: English 모드
+  meeting_name: 회의명
+  no_topic: 주제를 기다리는 중...
+  participants: 참가자
+  primary_language: 기본 언어
+  restart: 다시 시작
+  secondary_language: 보조 언어
+  start_recording: 녹음 시작
+  stop_recording: 녹음 중지
+  title: 실시간 번역 모니터
+  topic_model: 주제 모델
+  translation_model: 번역 모델
 navigation:
   agentChat: 에이전트 채팅
   chat: 채팅
@@ -494,6 +513,7 @@ navigation:
   meetingMinutes: 회의록
   promptOptimization: 프롬프트 최적화
   ragChat: RAG 채팅
+  realtimeTranslation: 실시간 번역
   settings: 설정
   speechRecognition: 음성 인식
   summary: 요약
@@ -553,6 +573,15 @@ rag:
   please_refer: .
   retrieving: Kendra에서 참조 문서를 검색하는 중...
   title: RAG 채팅
+realtimeTranslationPage:
+  description: 여기서는 검증된 회의록용 실시간 번역 플로우를 사용해 양방향 실시간 전사와 번역을 수행합니다.
+  englishPanel: 영어
+  idle: 준비 완료
+  japanesePanel: 일본어
+  listening: 음성을 인식하는 중...
+  noSegments: 번역된 발화가 여기에 표시됩니다
+  preparingMicrophone: 마이크를 준비하는 중...
+  secureOriginHint: 배포 환경은 HTTPS로 열고, 로컬 테스트는 localhost를 사용하세요.
 research:
   description: 웹 검색을 활용하여 산업 전반에 걸친 다양한 연구 작업을 수행하고 상세한 연구 보고서를 작성합니다.
   general_research: 일반 조사

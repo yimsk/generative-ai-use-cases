@@ -86,6 +86,18 @@ export type MeetingMinutesParams = {
   diagramOptions?: DiagramOption[];
 };
 
+export type RealtimeTranslationSplitParams = {
+  text: string;
+  sourceLanguage: 'ja' | 'en';
+  speaker?: string;
+};
+
+export type TopicSummaryParams = {
+  currentTopic: string;
+  newSegment: string;
+  targetLanguage: string;
+};
+
 export type PromptListItem = {
   title: string;
   systemContext: string;
@@ -113,4 +125,6 @@ export interface Prompter {
   promptList(t: TFunction): PromptList;
   diagramPrompt(params: DiagramParams): string;
   meetingMinutesPrompt(params: MeetingMinutesParams): string;
+  realtimeTranslationSplitPrompt(params: RealtimeTranslationSplitParams): string;
+  topicSummaryPrompt(params: TopicSummaryParams): string;
 }

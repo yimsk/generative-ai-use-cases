@@ -12,6 +12,8 @@ import {
   WebContentParams,
   DiagramParams,
   MeetingMinutesParams,
+  RealtimeTranslationSplitParams,
+  TopicSummaryParams,
 } from './index';
 
 import {
@@ -161,6 +163,12 @@ Please follow the instructions in the <input> and provide your answer.
 Output your answer in the format <output>answer</output>.
 Do not output any other text.
 Also, do not enclose your output in {} tags.`,
+  '/topic-summary': `You are an AI assistant that analyzes conversation topics.
+You will receive a current topic and a new conversation segment.
+Your task is to determine if the conversation topic has changed.
+If the topic has changed or is new, output the new topic enclosed in <output></output> tags.
+If the topic has NOT changed, output exactly: <output>SAME</output>
+Output only the topic or "SAME". No explanation.`,
 };
 
 export const claudePrompter: Prompter = {
@@ -698,6 +706,37 @@ ${MERMAID_SPECIAL_CHARS_WARNING}
       default:
         return `As a professional translator, please correct filler words and misrecognition in received transcribed text. Please add paragraph breaks if you detect obvious topic changes, and if you find important statements related to the topic, please format them in bold style. For speakers, you must transcribe in received text language.`;
     }
+  },
+  realtimeTranslationSplitPrompt(
+    params: RealtimeTranslationSplitParams
+  ): string {
+    return `<input>${params.text}</input>
+<sourceLanguage>${params.sourceLanguage}</sourceLanguage>
+${!params.speaker ? '' : `<speaker>${params.speaker}</speaker>`}
+
+You are a realtime translation assistant. Translate the text in <input> according to the source language in <sourceLanguage>.
+
+Translation rules:
+- If sourceLanguage is "ja" (Japanese): Translate to English and output in format: EN|translated text
+- If sourceLanguage is "en" (English): Translate to Japanese and output in format: JP|translated text in Japanese
+
+Important instructions:
+- Keep speaker context from <speaker> tag if provided
+- Be concise and natural in your translation
+- Only output the translation result in the specified format
+- Do not output any other text or explanations
+
+Output only the translation result enclosed in the <output></output> XML tags.`;
+  },
+  topicSummaryPrompt(params: TopicSummaryParams): string {
+    return `<current_topic>${params.currentTopic || '(none)'}</current_topic>
+<new_segment>${params.newSegment}</new_segment>
+<target_language>${params.targetLanguage}</target_language>
+
+Analyze whether the conversation topic has changed based on the new segment.
+If the topic has changed or is new, output the new topic in ${params.targetLanguage} enclosed in <output></output> tags.
+If the topic has NOT changed, output exactly: <output>SAME</output>
+Output only the topic or "SAME". No explanation.`;
   },
 };
 

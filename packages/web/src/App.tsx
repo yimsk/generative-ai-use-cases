@@ -24,6 +24,7 @@ import {
   PiNotebook,
   PiGraph,
   PiMagnifyingGlass,
+  PiMonitor,
 } from 'react-icons/pi';
 import { Outlet } from 'react-router-dom';
 import Drawer, { ItemProps } from './components/Drawer';
@@ -225,6 +226,22 @@ const App: React.FC = () => {
           label: t('navigation.translation'),
           to: '/translate',
           icon: <PiTranslate />,
+          display: 'usecase' as const,
+        }
+      : null,
+    enabled('realtimeTranslation')
+      ? {
+          label: t('navigation.realtimeTranslation'),
+          to: '/realtime-translation',
+          icon: <PiTranslate />,
+          display: 'usecase' as const,
+        }
+      : null,
+    enabled('realtimeTranslation')
+      ? {
+          label: t('navigation.realtimeTranslationMonitor'),
+          to: '/realtime-translation/monitor',
+          icon: <PiMonitor />,
           display: 'usecase' as const,
         }
       : null,

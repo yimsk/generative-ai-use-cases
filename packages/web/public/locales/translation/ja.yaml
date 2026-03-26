@@ -753,6 +753,25 @@ model:
   parameters:
     reasoning_budget: 深く考えるトークン数上限
     reasoning_effort: 思考の深さ (Effort)
+monitor:
+  background: 背景
+  clear: クリア
+  context_settings: コンテキスト設定
+  current_topic: 現在のトピック：
+  detecting_topic: トピックを検出中...
+  edit_context: コンテキスト編集
+  english_mode: Englishモード
+  meeting_name: 会議名
+  no_topic: トピックを検出中...
+  participants: 参加者
+  primary_language: プライマリ言語
+  restart: 再開
+  secondary_language: セカンダリ言語
+  start_recording: 録音を開始する
+  stop_recording: 録音を停止する
+  title: リアルタイム翻訳モニター
+  topic_model: トピックモデル
+  translation_model: 翻訳モデル
 navigation:
   agentChat: Agent チャット
   chat: チャット
@@ -763,6 +782,8 @@ navigation:
   meetingMinutes: 議事録生成
   promptOptimization: プロンプト最適化
   ragChat: RAG チャット
+  realtimeTranslation: リアルタイム翻訳
+  realtimeTranslationMonitor: 翻訳モニター
   settings: 設定
   speechRecognition: 音声認識
   summary: 要約
@@ -808,6 +829,15 @@ rag:
   please_refer: をご参照ください。
   retrieving: Kendra から参考ドキュメントを取得しています...
   title: RAG チャット
+realtimeTranslationPage:
+  description: ここでは実績のある議事録向けリアルタイム翻訳フローを使って、双方向の文字起こしと翻訳を行います。
+  englishPanel: 英語
+  idle: 準備完了
+  japanesePanel: 日本語
+  listening: 音声を認識中...
+  noSegments: 翻訳された発話がここに表示されます
+  preparingMicrophone: マイクを準備中...
+  secureOriginHint: デプロイ先は HTTPS で開くか、ローカル確認では localhost を使ってください。
 research:
   description: 業種・業界問わず様々なリサーチタスクを Web 検索を駆使して実施し、詳細な調査レポートを作成します。
   general_research: 一般調査

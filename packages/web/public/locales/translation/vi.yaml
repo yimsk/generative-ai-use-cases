@@ -617,6 +617,25 @@ model:
   parameters:
     reasoning_budget: Token budget for extended thinking
     reasoning_effort: Thinking effort level
+monitor:
+  background: Nền
+  clear: Xóa
+  context_settings: Cài đặt ngữ cảnh
+  current_topic: 'Chủ đề hiện tại:'
+  detecting_topic: Đang phát hiện chủ đề...
+  edit_context: Chỉnh sửa ngữ cảnh
+  english_mode: Chế độ English
+  meeting_name: Tên cuộc họp
+  no_topic: Đang chờ chủ đề...
+  participants: Ngườitham gia
+  primary_language: Ngôn ngữ chính
+  restart: Khởi động lại
+  secondary_language: Ngôn ngữ phụ
+  start_recording: Bắt đầu ghi âm
+  stop_recording: Dừng ghi âm
+  title: Màn hình giám sát dịch thuật thờigian thực
+  topic_model: Mô hình chủ đề
+  translation_model: Mô hình dịch thuật
 navigation:
   agentChat: Agent Chat
   chat: Chat
@@ -626,6 +645,7 @@ navigation:
   imageGeneration: Tạo hình ảnh
   promptOptimization: Tối ưu hóa prompt
   ragChat: RAG Chat
+  realtimeTranslation: Dịch thời gian thực
   settings: Cài đặt
   speechRecognition: Nhận dạng giọng nói
   summary: Tóm tắt
@@ -675,6 +695,15 @@ rag:
   please_refer: Vui lòng tham khảo.
   retrieving: Đang lấy tài liệu tham khảo từ Kendra...
   title: RAG Chat
+realtimeTranslationPage:
+  description: Trang này dùng luồng dịch thời gian thực đãใช้งานจริงจาก tính năng biên bản họp để phiên âm và dịch song ngữ trực tiếp.
+  englishPanel: Tiếng Anh
+  idle: Sẵn sàng
+  japanesePanel: Tiếng Nhật
+  listening: Đang nghe...
+  noSegments: Nội dung lời nói đã dịch sẽ xuất hiện tại đây
+  preparingMicrophone: Đang chuẩn bị micro...
+  secureOriginHint: Hãy mở bản deploy bằng HTTPS hoặc dùng localhost khi thử nghiệm cục bộ.
 research:
   description: Thực hiện các nhiệm vụ nghiên cứu đa dạng trên các ngành công nghiệp bằng cách sử dụng tìm kiếm web và tạo báo cáo nghiên cứu chi tiết.
   general_research: Nghiên cứu chung

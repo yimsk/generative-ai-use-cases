@@ -521,6 +521,25 @@ model:
   parameters:
     reasoning_budget: 推理预算
     reasoning_effort: 思考深度
+monitor:
+  background: 背景
+  clear: 清除
+  context_settings: 上下文设置
+  current_topic: 当前主题：
+  detecting_topic: 正在检测主题...
+  edit_context: 编辑上下文
+  english_mode: English模式
+  meeting_name: 会议名称
+  no_topic: 等待主题...
+  participants: 参与者
+  primary_language: 主要语言
+  restart: 重新开始
+  secondary_language: 次要语言
+  start_recording: 开始录音
+  stop_recording: 停止录音
+  title: 实时翻译监控器
+  topic_model: 主题模型
+  translation_model: 翻译模型
 navigation:
   agentChat: Agent聊天
   chat: 聊天
@@ -531,6 +550,7 @@ navigation:
   meetingMinutes: 会议纪要
   promptOptimization: 提示优化
   ragChat: RAG聊天
+  realtimeTranslation: 实时翻译
   settings: 设置
   speechRecognition: 语音识别
   summary: 摘要
@@ -573,6 +593,15 @@ rag:
   please_refer: 请参考。
   retrieving: 正在从Kendra获取参考文档...
   title: RAG聊天
+realtimeTranslationPage:
+  description: 此页面复用已验证的会议纪要实时翻译流程，用于双语实时转写与翻译。
+  englishPanel: 英语
+  idle: 已就绪
+  japanesePanel: 日语
+  listening: 正在收听...
+  noSegments: 已翻译的发言将显示在此处
+  preparingMicrophone: 正在准备麦克风...
+  secureOriginHint: 请通过 HTTPS 打开已部署站点，或在本地测试时使用 localhost。
 research:
   description: 使用网络搜索进行跨行业的各种研究任务，并创建详细的研究报告。
   general_research: 一般调查

@@ -27,6 +27,8 @@ import GenerateVideoPage from './pages/GenerateVideoPage';
 import OptimizePromptPage from './pages/OptimizePromptPage';
 import TranscribePage from './pages/TranscribePage';
 import MeetingMinutesPage from './pages/MeetingMinutesPage';
+import RealtimeTranslationPage from './pages/RealtimeTranslationPage';
+import RealtimeMonitorPage from './pages/RealtimeMonitorPage';
 import AgentChatPage from './pages/AgentChatPage';
 import FlowChatPage from './pages/FlowChatPage';
 import VoiceChatPage from './pages/VoiceChatPage';
@@ -250,6 +252,18 @@ const routes: RouteObject[] = [
     ? {
         path: '/agent-builder/:agentId',
         element: <AgentBuilderChatPage />,
+      }
+    : null,
+  enabled('realtimeTranslation')
+    ? {
+        path: '/realtime-translation',
+        element: <RealtimeTranslationPage />,
+      }
+    : null,
+  enabled('realtimeTranslation')
+    ? {
+        path: '/realtime-translation/monitor',
+        element: <RealtimeMonitorPage />,
       }
     : null,
   {

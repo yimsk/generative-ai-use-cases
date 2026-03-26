@@ -907,6 +907,25 @@ model:
   parameters:
     reasoning_budget: Token budget for extended thinking
     reasoning_effort: Thinking effort level
+monitor:
+  background: Background
+  clear: Clear
+  context_settings: Context Settings
+  current_topic: 'Current Topic:'
+  detecting_topic: Detecting topic...
+  edit_context: Edit Context
+  english_mode: English Mode
+  meeting_name: Meeting Name
+  no_topic: Waiting for topic...
+  participants: Participants
+  primary_language: Primary Language
+  restart: Restart
+  secondary_language: Secondary Language
+  start_recording: Start Recording
+  stop_recording: Stop Recording
+  title: Real-Time Translation Monitor
+  topic_model: Topic Model
+  translation_model: Translation Model
 navigation:
   agentChat: Agent Chat
   chat: Chat
@@ -917,6 +936,8 @@ navigation:
   meetingMinutes: Meeting Minutes
   promptOptimization: Prompt Optimization
   ragChat: RAG Chat
+  realtimeTranslation: Realtime Translation
+  realtimeTranslationMonitor: Translation Monitor
   settings: Settings
   speechRecognition: Speech Recognition
   summary: Summary
@@ -981,6 +1002,15 @@ rag:
   please_refer: .
   retrieving: Retrieving reference documents from Kendra...
   title: RAG Chat
+realtimeTranslationPage:
+  description: Use the proven meeting-minutes realtime translation flow here for bilingual live transcription and translation.
+  englishPanel: English
+  idle: Ready
+  japanesePanel: Japanese
+  listening: Listening...
+  noSegments: Translated speech will appear here
+  preparingMicrophone: Preparing microphone...
+  secureOriginHint: Open the deployed site over HTTPS or use localhost for local testing.
 research:
   description: Conducts various research tasks across industries using web search and creates detailed research reports.
   general_research: General Research
