@@ -19,12 +19,17 @@ vi.mock('../src/hooks/useModel', () => ({
 }));
 
 import TopicBar from '../src/components/RealtimeMonitor/TopicBar';
-import EnglishModeToggle from '../src/components/RealtimeMonitor/EnglishModeToggle';
+import LanguageToggle from '../src/components/RealtimeMonitor/LanguageToggle';
 import StructuredContextForm from '../src/components/RealtimeMonitor/StructuredContextForm';
 import RecordingContextMenu from '../src/components/RealtimeMonitor/RecordingContextMenu';
+import TranslationPanel from '../src/components/RealtimeMonitor/TranslationPanel';
 import MonitorSetup, {
   type MonitorConfig,
 } from '../src/components/RealtimeMonitor/MonitorSetup';
+import {
+  buildMonitorStaticContext,
+  buildMonitorTranslationContext,
+} from '../src/utils/monitorTranslationContext';
 
 const japaneseTopic = String.fromCodePoint(
   0x4f1a,
@@ -32,6 +37,20 @@ const japaneseTopic = String.fromCodePoint(
   0x306e,
   0x8981,
   0x70b9
+);
+const japaneseHello = String.fromCodePoint(
+  0x3053,
+  0x3093,
+  0x306b,
+  0x3061,
+  0x306f
+);
+const japaneseGoodbye = String.fromCodePoint(
+  0x3055,
+  0x3088,
+  0x3046,
+  0x306a,
+  0x3089
 );
 
 describe('TopicBar', () => {
@@ -99,31 +118,269 @@ describe('TopicBar', () => {
   });
 });
 
-describe('EnglishModeToggle', () => {
-  it('renders toggle with label', () => {
+describe('LanguageToggle', () => {
+  it('renders button with label and current language', () => {
     render(
-      React.createElement(EnglishModeToggle, {
-        isEnglishMode: false,
-        onChange: () => {},
+      React.createElement(LanguageToggle, {
+        checked: false,
+        onSwitch: () => {},
       })
     );
 
-    expect(screen.getByText('monitor.english_mode')).toBeInTheDocument();
+    expect(screen.getByText('monitor.display_language')).toBeInTheDocument();
+    expect(screen.getByText('JP')).toBeInTheDocument();
   });
 
-  it('calls onChange when toggled', () => {
-    const onChange = vi.fn();
+  it('calls onSwitch when clicked', () => {
+    const onSwitch = vi.fn();
     render(
-      React.createElement(EnglishModeToggle, {
-        isEnglishMode: false,
-        onChange,
+      React.createElement(LanguageToggle, {
+        checked: false,
+        onSwitch,
       })
     );
 
-    const checkbox = screen.getByRole('checkbox');
-    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByRole('button'));
 
-    expect(onChange).toHaveBeenCalledWith(true);
+    expect(onSwitch).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('monitor translation context helpers', () => {
+  it('builds static context from configured meeting fields', () => {
+    expect(
+      buildMonitorStaticContext({
+        meetingName: 'Weekly Sync',
+        participants: 'Alice, Bob',
+        background: 'Release planning',
+      })
+    ).toBe(
+      'Meeting name: Weekly Sync\nParticipants: Alice, Bob\nBackground: Release planning'
+    );
+  });
+
+  it('combines static, generated, and recent context for translation', () => {
+    expect(
+      buildMonitorTranslationContext({
+        staticContext: 'Meeting name: Weekly Sync',
+        systemGeneratedContext: 'This is a software delivery meeting.',
+        recentContext: 'We are discussing the rollout window.',
+      })
+    ).toBe(
+      'Structured meeting context:\nMeeting name: Weekly Sync\n\nSystem-generated context:\nThis is a software delivery meeting.\n\nRecent conversation context:\nWe are discussing the rollout window.'
+    );
+  });
+});
+
+describe('TranslationPanel', () => {
+  it('renders japanese text when english mode is off', () => {
+    render(
+      React.createElement(TranslationPanel, {
+        segments: [
+          {
+            id: '1',
+            timestamp: '00:00',
+            sourceText: 'hello',
+            translatedText: japaneseHello,
+            jaText: japaneseHello,
+            enText: 'hello',
+          },
+        ],
+        isEnglishMode: false,
+      })
+    );
+
+    expect(screen.getByText(japaneseHello)).toBeInTheDocument();
+  });
+
+  it('renders english text when english mode is on', () => {
+    render(
+      React.createElement(TranslationPanel, {
+        segments: [
+          {
+            id: '1',
+            timestamp: '00:00',
+            sourceText: 'hello',
+            translatedText: japaneseHello,
+            jaText: japaneseHello,
+            enText: 'hello',
+          },
+        ],
+        isEnglishMode: true,
+      })
+    );
+
+    expect(screen.getByText('hello')).toBeInTheDocument();
+  });
+
+  it('scrolls to the latest content by default', async () => {
+    const { rerender } = render(
+      React.createElement(TranslationPanel, {
+        segments: [
+          {
+            id: '1',
+            timestamp: '00:00',
+            sourceText: 'hello',
+            translatedText: japaneseHello,
+            jaText: japaneseHello,
+            enText: 'hello',
+          },
+        ],
+        isEnglishMode: false,
+      })
+    );
+
+    const panel = screen.getByTestId('translation-panel') as HTMLDivElement;
+    Object.defineProperty(panel, 'scrollHeight', {
+      configurable: true,
+      value: 480,
+    });
+    panel.scrollTop = 0;
+
+    rerender(
+      React.createElement(TranslationPanel, {
+        segments: [
+          {
+            id: '1',
+            timestamp: '00:00',
+            sourceText: 'hello',
+            translatedText: japaneseHello,
+            jaText: japaneseHello,
+            enText: 'hello',
+          },
+          {
+            id: '2',
+            timestamp: '00:05',
+            sourceText: 'bye',
+            translatedText: japaneseGoodbye,
+            jaText: japaneseGoodbye,
+            enText: 'bye',
+          },
+        ],
+        isEnglishMode: false,
+      })
+    );
+
+    await vi.waitFor(() => {
+      expect(panel.scrollTop).toBe(480);
+    });
+  });
+
+  it('stops auto-following when user scrolls up', async () => {
+    render(
+      React.createElement(TranslationPanel, {
+        segments: [
+          {
+            id: '1',
+            timestamp: '00:00',
+            sourceText: 'hello',
+            translatedText: japaneseHello,
+            jaText: japaneseHello,
+            enText: 'hello',
+          },
+        ],
+        isEnglishMode: false,
+      })
+    );
+
+    const panel = screen.getByTestId('translation-panel') as HTMLDivElement;
+    Object.defineProperty(panel, 'scrollHeight', {
+      configurable: true,
+      value: 480,
+    });
+    Object.defineProperty(panel, 'clientHeight', {
+      configurable: true,
+      value: 200,
+    });
+
+    const { rerender } = render(
+      React.createElement(TranslationPanel, {
+        segments: [
+          {
+            id: '1',
+            timestamp: '00:00',
+            sourceText: 'hello',
+            translatedText: japaneseHello,
+            jaText: japaneseHello,
+            enText: 'hello',
+          },
+          {
+            id: '2',
+            timestamp: '00:05',
+            sourceText: 'bye',
+            translatedText: japaneseGoodbye,
+            jaText: japaneseGoodbye,
+            enText: 'bye',
+          },
+        ],
+        isEnglishMode: false,
+      })
+    );
+
+    await vi.waitFor(() => {
+      expect(panel.scrollTop).toBe(480);
+    });
+
+    fireEvent.scroll(panel, { target: { scrollTop: 0 } });
+
+    rerender(
+      React.createElement(TranslationPanel, {
+        segments: [
+          {
+            id: '1',
+            timestamp: '00:00',
+            sourceText: 'hello',
+            translatedText: japaneseHello,
+            jaText: japaneseHello,
+            enText: 'hello',
+          },
+          {
+            id: '2',
+            timestamp: '00:05',
+            sourceText: 'bye',
+            translatedText: japaneseGoodbye,
+            jaText: japaneseGoodbye,
+            enText: 'bye',
+          },
+          {
+            id: '3',
+            timestamp: '00:10',
+            sourceText: 'thanks',
+            translatedText: japaneseGoodbye,
+            jaText: japaneseGoodbye,
+            enText: 'thanks',
+          },
+        ],
+        isEnglishMode: false,
+      })
+    );
+
+    await vi.waitFor(() => {
+      expect(panel.scrollTop).toBe(0);
+    });
+  });
+
+  it('uses smaller body text classes than the oversized version', () => {
+    render(
+      React.createElement(TranslationPanel, {
+        segments: [
+          {
+            id: '1',
+            timestamp: '00:00',
+            sourceText: 'hello',
+            translatedText: japaneseHello,
+            jaText: japaneseHello,
+            enText: 'hello',
+          },
+        ],
+        isEnglishMode: false,
+      })
+    );
+
+    expect(screen.getByText(japaneseHello)).toHaveClass(
+      'text-sm',
+      'md:text-base'
+    );
   });
 });
 
@@ -278,6 +535,115 @@ describe('RecordingContextMenu', () => {
       background: '',
     });
   });
+
+  it('renders systemGeneratedContext textarea when prop provided', () => {
+    render(
+      React.createElement(RecordingContextMenu, {
+        values: {
+          meetingName: '',
+          participants: '',
+          background: '',
+        },
+        onChange: () => {},
+        systemGeneratedContext: 'test context',
+      })
+    );
+
+    // Expand the menu
+    const button = screen.getByText('monitor.edit_context');
+    fireEvent.click(button);
+
+    const textarea = screen.getByLabelText('monitor.system_generated_context');
+    expect(textarea).toBeInTheDocument();
+    expect(textarea).toHaveValue('test context');
+  });
+
+  it('does not render textarea when prop omitted', () => {
+    render(
+      React.createElement(RecordingContextMenu, {
+        values: {
+          meetingName: '',
+          participants: '',
+          background: '',
+        },
+        onChange: () => {},
+      })
+    );
+
+    // Expand the menu
+    const button = screen.getByText('monitor.edit_context');
+    fireEvent.click(button);
+
+    expect(
+      screen.queryByLabelText('monitor.system_generated_context')
+    ).not.toBeInTheDocument();
+  });
+
+  it('textarea has readOnly attribute', () => {
+    render(
+      React.createElement(RecordingContextMenu, {
+        values: {
+          meetingName: '',
+          participants: '',
+          background: '',
+        },
+        onChange: () => {},
+        systemGeneratedContext: 'some context',
+      })
+    );
+
+    // Expand the menu
+    const button = screen.getByText('monitor.edit_context');
+    fireEvent.click(button);
+
+    const textarea = screen.getByLabelText('monitor.system_generated_context');
+    expect(textarea).toHaveAttribute('readOnly');
+  });
+
+  it('shows placeholder when context is empty string', () => {
+    render(
+      React.createElement(RecordingContextMenu, {
+        values: {
+          meetingName: '',
+          participants: '',
+          background: '',
+        },
+        onChange: () => {},
+        systemGeneratedContext: '',
+      })
+    );
+
+    // Expand the menu
+    const button = screen.getByText('monitor.edit_context');
+    fireEvent.click(button);
+
+    const textarea = screen.getByLabelText('monitor.system_generated_context');
+    expect(textarea).toHaveAttribute(
+      'placeholder',
+      'monitor.system_generated_context_placeholder'
+    );
+  });
+
+  it('displays provided value', () => {
+    render(
+      React.createElement(RecordingContextMenu, {
+        values: {
+          meetingName: '',
+          participants: '',
+          background: '',
+        },
+        onChange: () => {},
+        systemGeneratedContext: 'AI context here',
+      })
+    );
+
+    // Expand the menu
+    const button = screen.getByText('monitor.edit_context');
+    fireEvent.click(button);
+
+    const textarea = screen.getByLabelText('monitor.system_generated_context');
+    expect(textarea).toHaveValue('AI context here');
+  });
 });
 
 describe('MonitorSetup', () => {
@@ -296,19 +662,9 @@ describe('MonitorSetup', () => {
     expect(screen.getByText('monitor.participants')).toBeInTheDocument();
     expect(screen.getByText('monitor.background')).toBeInTheDocument();
 
-    // Check language selectors
-    expect(
-      screen.getByLabelText('monitor.primary_language')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('monitor.secondary_language')
-    ).toBeInTheDocument();
-
-    // Check model selectors
-    expect(
-      screen.getByLabelText('monitor.translation_model')
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText('monitor.topic_model')).toBeInTheDocument();
+    // Check selectors (4 comboboxes: 2 languages + 2 models)
+    const selects = screen.getAllByRole('combobox');
+    expect(selects).toHaveLength(4);
 
     // Check start button
     expect(screen.getByText('monitor.start_recording')).toBeInTheDocument();
@@ -353,8 +709,8 @@ describe('MonitorSetup', () => {
       })
     );
 
-    // Change secondary language to match primary
-    const secondarySelect = screen.getByLabelText('monitor.secondary_language');
+    // Change secondary language to match primary (second combobox)
+    const secondarySelect = screen.getAllByRole('combobox')[1];
     fireEvent.change(secondarySelect, { target: { value: 'ja-JP' } });
 
     // Start button should be disabled
