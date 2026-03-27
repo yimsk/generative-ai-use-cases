@@ -106,14 +106,8 @@ const MonitorSetup: React.FC<Props> = ({ onStart }) => {
           </section>
 
           <section className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium text-gray-300"
-                htmlFor="monitor-primary-language">
-                {t('monitor.primary_language')}
-              </label>
+            <div>
               <select
-                id="monitor-primary-language"
                 className={selectClassName}
                 value={primaryLanguage}
                 onChange={(event) => setPrimaryLanguage(event.target.value)}>
@@ -125,14 +119,8 @@ const MonitorSetup: React.FC<Props> = ({ onStart }) => {
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium text-gray-300"
-                htmlFor="monitor-secondary-language">
-                {t('monitor.secondary_language')}
-              </label>
+            <div>
               <select
-                id="monitor-secondary-language"
                 className={selectClassName}
                 value={secondaryLanguage}
                 onChange={(event) => setSecondaryLanguage(event.target.value)}>

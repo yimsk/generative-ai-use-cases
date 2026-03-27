@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import TranscriptSidebar, { type DisplaySegment } from './TranscriptSidebar';
 import TranslationPanel from './TranslationPanel';
+import LanguageToggle from './LanguageToggle';
 
 type Props = {
   segments: DisplaySegment[];
@@ -9,7 +10,7 @@ type Props = {
   topicEn: string;
   isUpdating: boolean;
   isEnglishMode: boolean;
-  onToggleEnglish: (value: boolean) => void;
+  onToggleLanguage: (value: boolean) => void;
   onStop: () => void;
   onClear: () => void;
   children?: React.ReactNode;
@@ -21,18 +22,17 @@ const MonitorDisplay: React.FC<Props> = ({
   topicEn,
   isUpdating,
   isEnglishMode,
-  onToggleEnglish,
+  onToggleLanguage,
   onStop,
   onClear,
   children,
 }) => {
   const { t } = useTranslation();
-  const modeLabel = isEnglishMode ? 'EN' : 'JP';
   const displayedTopic = isEnglishMode ? topicEn : topicJa;
 
   return (
-    <div className="h-full min-h-0 rounded-[32px] border border-slate-800 bg-slate-950 text-white shadow-[0_28px_80px_rgba(2,6,23,0.55)]">
-      <div className="grid h-full min-h-0 grid-cols-1 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.08),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,1))] lg:grid-cols-[minmax(18rem,30%)_1fr]">
+    <div className="h-full min-h-0 overflow-hidden rounded-[32px] border border-slate-800 bg-slate-950 text-white shadow-[0_28px_80px_rgba(2,6,23,0.55)]">
+      <div className="grid h-full min-h-0 grid-cols-1 overflow-hidden bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.08),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,1))] lg:grid-cols-[minmax(18rem,30%)_1fr]">
         <aside className="flex min-h-72 flex-col border-b border-slate-800/80 bg-slate-900/80 lg:min-h-0 lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between gap-3 border-b border-slate-800/80 px-4 py-4">
             <div>
@@ -61,7 +61,7 @@ const MonitorDisplay: React.FC<Props> = ({
           </div>
         </aside>
 
-        <section className="relative flex min-h-96 min-w-0 flex-col gap-4 p-4 md:p-5 lg:min-h-0 lg:p-6">
+        <section className="relative flex min-h-0 min-w-0 flex-col gap-4 overflow-hidden p-4 md:p-5 lg:p-6">
           {children && (
             <div className="absolute right-4 top-4 z-20">{children}</div>
           )}
@@ -90,22 +90,11 @@ const MonitorDisplay: React.FC<Props> = ({
             />
           </div>
 
-          <div className="pointer-events-none absolute bottom-4 right-4 z-10 flex justify-end md:bottom-5 md:right-5 lg:bottom-6 lg:right-6">
-            <button
-              type="button"
-              onClick={() => onToggleEnglish(!isEnglishMode)}
-              className="pointer-events-auto inline-flex items-center gap-3 rounded-full border border-cyan-400/20 bg-slate-900/90 px-4 py-2 text-xs font-medium text-slate-100 shadow-lg shadow-slate-950/40 backdrop-blur-sm transition hover:border-cyan-300/35 hover:bg-slate-800">
-              <span>{t('monitor.english_mode')}</span>
-              <span
-                className={[
-                  'inline-flex min-w-11 justify-center rounded-full px-2 py-0.5 text-[11px]',
-                  isEnglishMode
-                    ? 'bg-cyan-400 text-slate-950'
-                    : 'bg-slate-700 text-slate-200',
-                ].join(' ')}>
-                {modeLabel}
-              </span>
-            </button>
+          <div className="pointer-events-none absolute bottom-4 right-4 z-10 md:bottom-5 md:right-5 lg:bottom-6 lg:right-6">
+            <LanguageToggle
+              checked={isEnglishMode}
+              onSwitch={onToggleLanguage}
+            />
           </div>
         </section>
       </div>

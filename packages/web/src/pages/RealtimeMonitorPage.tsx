@@ -12,15 +12,27 @@ import MonitorDisplay from '../components/RealtimeMonitor/MonitorDisplay';
 import MonitorSetup, {
   type MonitorConfig,
 } from '../components/RealtimeMonitor/MonitorSetup';
-import TopicBar from '../components/RealtimeMonitor/TopicBar';
-import EnglishModeToggle from '../components/RealtimeMonitor/EnglishModeToggle';
 import RecordingContextMenu from '../components/RealtimeMonitor/RecordingContextMenu';
 import type { StructuredContextValues } from '../components/RealtimeMonitor/StructuredContextForm';
 import type { DisplaySegment } from '../components/RealtimeMonitor/TranscriptSidebar';
 import useMicrophone from '../hooks/useMicrophone';
 import useRealtimeTranslation from '../hooks/useRealtimeTranslation';
 import useTopicSummary from '../hooks/useTopicSummary';
-import { getLanguageNameFromCode } from '../components/MeetingMinutes/MeetingMinutesContextGenerator';
+import useChatApi from '../hooks/useChatApi';
+import {
+  generateSystemContext,
+  getLanguageNameFromCode,
+  getRecentSegmentsContext,
+  shouldGenerateContext,
+} from '../components/MeetingMinutes/MeetingMinutesContextGenerator';
+import {
+  getTranslationTarget,
+  resolveSourceLanguage,
+} from '../utils/realtimeTranslationDirection';
+import {
+  buildMonitorStaticContext,
+  buildMonitorTranslationContext,
+} from '../utils/monitorTranslationContext';
 
 type MonitorPhase = 'idle' | 'recording' | 'stopped';
 
@@ -70,9 +82,15 @@ const buildDisplayTexts = (
   sourceText: string,
   translatedText: string,
   config: MonitorConfig,
+  transcripts: Transcript[],
   detectedLanguageCode?: string
 ) => {
-  const sourceLanguage = detectedLanguageCode ?? config.primaryLanguage;
+  const sourceLanguage = resolveSourceLanguage(
+    transcripts,
+    detectedLanguageCode,
+    config.primaryLanguage,
+    config.secondaryLanguage
+  );
 
   if (isJapaneseLanguage(sourceLanguage)) {
     return {
@@ -117,6 +135,7 @@ const upsertSegment = (
     sourceText,
     nextTranslatedText,
     config,
+    rawSegment.transcripts,
     rawSegment.languageCode
   );
   const nextSegment: DisplaySegment = {
@@ -159,10 +178,13 @@ const MonitorSession: React.FC<SessionProps> = ({
     clientReady,
   } = useMicrophone();
   const { translate } = useRealtimeTranslation();
+  const { predict } = useChatApi();
   const [segments, setSegments] = useState<DisplaySegment[]>([]);
   const [isEnglishMode, setIsEnglishMode] = useState(
     isEnglishLanguage(config.secondaryLanguage)
   );
+  const [systemGeneratedContext, setSystemGeneratedContext] =
+    useState<string>('');
   const [contextValues, setContextValues] = useState<StructuredContextValues>({
     meetingName: config.meetingName,
     participants: config.participants,
@@ -175,24 +197,41 @@ const MonitorSession: React.FC<SessionProps> = ({
   const startRequestedRef = useRef(false);
   const latestRequestIdRef = useRef<Record<string, number>>({});
   const latestRequestedSourceRef = useRef<Record<string, string>>({});
+  const generateSystemContextRef = useRef<(() => Promise<void>) | null>(null);
 
-  const contextString = useMemo(() => {
-    return [
-      contextValues.meetingName,
-      contextValues.participants,
-      contextValues.background,
-    ]
-      .filter(Boolean)
-      .join('\n');
-  }, [
-    contextValues.background,
-    contextValues.meetingName,
-    contextValues.participants,
-  ]);
+  const staticContext = useMemo(() => {
+    return buildMonitorStaticContext(contextValues);
+  }, [contextValues]);
 
-  const targetLanguageName = useMemo(() => {
-    return getLanguageNameFromCode(config.secondaryLanguage);
-  }, [config.secondaryLanguage]);
+  const recentContext = useMemo(() => {
+    return getRecentSegmentsContext(rawTranscripts);
+  }, [rawTranscripts]);
+
+  const translationContext = useMemo(() => {
+    return buildMonitorTranslationContext({
+      staticContext,
+      systemGeneratedContext,
+      recentContext,
+    });
+  }, [recentContext, staticContext, systemGeneratedContext]);
+
+  const generateSystemContextCallback = useCallback(async () => {
+    if (!shouldGenerateContext(true, phase === 'recording', rawTranscripts)) {
+      return;
+    }
+
+    const result = await generateSystemContext(
+      rawTranscripts,
+      config.secondaryLanguage,
+      predict
+    );
+
+    if (result) {
+      setSystemGeneratedContext(result);
+    }
+  }, [config.secondaryLanguage, phase, predict, rawTranscripts]);
+
+  generateSystemContextRef.current = generateSystemContextCallback;
 
   const requestTranslation = useCallback(
     async (rawSegment: RawTranscriptSegment, sourceText: string) => {
@@ -201,11 +240,25 @@ const MonitorSession: React.FC<SessionProps> = ({
       latestRequestIdRef.current[rawSegment.resultId] = nextRequestId;
       latestRequestedSourceRef.current[rawSegment.resultId] = sourceText;
 
+      const sourceLanguage = resolveSourceLanguage(
+        rawSegment.transcripts,
+        rawSegment.languageCode,
+        config.primaryLanguage,
+        config.secondaryLanguage
+      );
+      const targetLanguage = getTranslationTarget(
+        'bidirectional',
+        sourceLanguage,
+        config.primaryLanguage,
+        config.secondaryLanguage
+      );
+      const targetLanguageName = getLanguageNameFromCode(targetLanguage);
+
       const translatedText = await translate(
         sourceText,
         config.translationModel,
         targetLanguageName,
-        contextString || undefined
+        translationContext
       );
 
       if (
@@ -220,7 +273,7 @@ const MonitorSession: React.FC<SessionProps> = ({
       );
       updateTopic(translatedText);
     },
-    [config, contextString, targetLanguageName, translate, updateTopic]
+    [config, translate, translationContext, updateTopic]
   );
 
   useEffect(() => {
@@ -238,6 +291,25 @@ const MonitorSession: React.FC<SessionProps> = ({
     phase,
     startTranscription,
   ]);
+
+  useEffect(() => {
+    if (phase !== 'recording') {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void generateSystemContextRef.current?.();
+    }, 60000);
+
+    const initialTimeoutId = window.setTimeout(() => {
+      void generateSystemContextRef.current?.();
+    }, 30000);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(initialTimeoutId);
+    };
+  }, [phase]);
 
   useEffect(() => {
     rawTranscripts.forEach((rawSegment) => {
@@ -271,8 +343,8 @@ const MonitorSession: React.FC<SessionProps> = ({
   }, [onStop, stopTranscription]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-slate-950 px-4 py-4 text-white lg:px-6 lg:py-6">
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-col gap-4">
+    <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-slate-950 px-4 py-4 text-white lg:px-6 lg:py-6">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1800px] flex-col gap-4 overflow-hidden">
         <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 px-5 py-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-semibold text-white lg:text-2xl">
@@ -284,18 +356,7 @@ const MonitorSession: React.FC<SessionProps> = ({
               {t('monitor.secondary_language')}: {config.secondaryLanguage}
             </p>
           </div>
-          <EnglishModeToggle
-            isEnglishMode={isEnglishMode}
-            onChange={setIsEnglishMode}
-          />
         </div>
-
-        <TopicBar
-          topicJa={topicJa}
-          topicEn={topicEn}
-          isUpdating={isUpdating}
-          isEnglishMode={isEnglishMode}
-        />
 
         {error && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
@@ -317,19 +378,14 @@ const MonitorSession: React.FC<SessionProps> = ({
             topicEn={topicEn}
             isUpdating={isUpdating}
             isEnglishMode={isEnglishMode}
-            onToggleEnglish={setIsEnglishMode}
+            onToggleLanguage={setIsEnglishMode}
             onStop={phase === 'recording' ? handleStop : () => undefined}
             onClear={onClear}>
-            <div className="flex items-center gap-2">
-              <EnglishModeToggle
-                isEnglishMode={isEnglishMode}
-                onChange={setIsEnglishMode}
-              />
-              <RecordingContextMenu
-                values={contextValues}
-                onChange={setContextValues}
-              />
-            </div>
+            <RecordingContextMenu
+              values={contextValues}
+              onChange={setContextValues}
+              systemGeneratedContext={systemGeneratedContext}
+            />
           </MonitorDisplay>
 
           {phase === 'stopped' && (
