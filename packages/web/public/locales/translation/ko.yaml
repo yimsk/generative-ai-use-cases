@@ -490,8 +490,9 @@ monitor:
   context_settings: 컨텍스트 설정
   current_topic: '현재 주제:'
   detecting_topic: 주제 감지 중...
+  display_language: 表示言語
   edit_context: 컨텍스트 편집
-  english_mode: English 모드
+  follow_latest: 最新を追従
   meeting_name: 회의명
   no_topic: 주제를 기다리는 중...
   participants: 참가자
@@ -503,6 +504,8 @@ monitor:
   title: 실시간 번역 모니터
   topic_model: 주제 모델
   translation_model: 번역 모델
+  system_generated_context: 시스템 컨텍스트
+  system_generated_context_placeholder: AI 생성 컨텍스트가 여기에 표시됩니다...
 navigation:
   agentChat: 에이전트 채팅
   chat: 채팅

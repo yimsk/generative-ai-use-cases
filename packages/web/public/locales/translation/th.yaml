@@ -639,8 +639,9 @@ monitor:
   context_settings: การตั้งค่าบริบท
   current_topic: 'หัวข้อปัจจุบัน:'
   detecting_topic: กำลังตรวจจับหัวข้อ...
+  display_language: 表示言語
   edit_context: แก้ไขบริบท
-  english_mode: โหมด English
+  follow_latest: 最新を追従
   meeting_name: ชื่อการประชุม
   no_topic: กำลังรอหัวข้อ...
   participants: ผู้เข้าร่วม
@@ -652,6 +653,8 @@ monitor:
   title: มอนิเตอร์การแปลแบบเรียลไทม์
   topic_model: โมเดลหัวข้อ
   translation_model: โมเดลการแปล
+  system_generated_context: ระบบบริบท
+  system_generated_context_placeholder: บริบทที่สร้างโดย AI จะปรากฏที่นี่...
 navigation:
   agentChat: Agent Chat
   chat: Chat

@@ -759,8 +759,9 @@ monitor:
   context_settings: コンテキスト設定
   current_topic: 現在のトピック：
   detecting_topic: トピックを検出中...
+  display_language: 表示言語
   edit_context: コンテキスト編集
-  english_mode: Englishモード
+  follow_latest: 最新を追従
   meeting_name: 会議名
   no_topic: トピックを検出中...
   participants: 参加者
@@ -772,6 +773,8 @@ monitor:
   title: リアルタイム翻訳モニター
   topic_model: トピックモデル
   translation_model: 翻訳モデル
+  system_generated_context: システムコンテキスト
+  system_generated_context_placeholder: AIが生成したコンテキストがここに表示されます...
 navigation:
   agentChat: Agent チャット
   chat: チャット

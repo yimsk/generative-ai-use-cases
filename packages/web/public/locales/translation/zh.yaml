@@ -527,8 +527,9 @@ monitor:
   context_settings: 上下文设置
   current_topic: 当前主题：
   detecting_topic: 正在检测主题...
+  display_language: 表示言語
   edit_context: 编辑上下文
-  english_mode: English模式
+  follow_latest: 最新を追従
   meeting_name: 会议名称
   no_topic: 等待主题...
   participants: 参与者
@@ -540,6 +541,8 @@ monitor:
   title: 实时翻译监控器
   topic_model: 主题模型
   translation_model: 翻译模型
+  system_generated_context: 系统上下文
+  system_generated_context_placeholder: AI生成的上下文将显示在这里...
 navigation:
   agentChat: Agent聊天
   chat: 聊天

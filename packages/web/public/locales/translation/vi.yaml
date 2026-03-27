@@ -623,8 +623,9 @@ monitor:
   context_settings: Cài đặt ngữ cảnh
   current_topic: 'Chủ đề hiện tại:'
   detecting_topic: Đang phát hiện chủ đề...
+  display_language: 表示言語
   edit_context: Chỉnh sửa ngữ cảnh
-  english_mode: Chế độ English
+  follow_latest: 最新を追従
   meeting_name: Tên cuộc họp
   no_topic: Đang chờ chủ đề...
   participants: Người tham gia
@@ -636,6 +637,8 @@ monitor:
   title: Màn hình giám sát dịch thuật thờigian thực
   topic_model: Mô hình chủ đề
   translation_model: Mô hình dịch thuật
+  system_generated_context: Ngữ cảnh hệ thống
+  system_generated_context_placeholder: Ngữ cảnh do AI tạo sẽ xuất hiện ở đây...
 navigation:
   agentChat: Agent Chat
   chat: Chat

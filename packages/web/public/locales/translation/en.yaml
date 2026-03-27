@@ -913,8 +913,9 @@ monitor:
   context_settings: Context Settings
   current_topic: 'Current Topic:'
   detecting_topic: Detecting topic...
+  display_language: Display Language
   edit_context: Edit Context
-  english_mode: English Mode
+  follow_latest: Follow Latest
   meeting_name: Meeting Name
   no_topic: Waiting for topic...
   participants: Participants
@@ -926,6 +927,8 @@ monitor:
   title: Real-Time Translation Monitor
   topic_model: Topic Model
   translation_model: Translation Model
+  system_generated_context: System Context
+  system_generated_context_placeholder: AI-generated context will appear here...
 navigation:
   agentChat: Agent Chat
   chat: Chat
