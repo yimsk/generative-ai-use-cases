@@ -2,13 +2,11 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react-swc';
 
 export default defineConfig({
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
   test: {
     name: 'use-case-builder',
     root: './tests',
-    include: ['**/*.test.ts'],
+    include: ['**/*.test.ts', '**/*.test.tsx'],
     environment: 'jsdom',
     setupFiles: ['./setupTests.ts'],
     globals: true,

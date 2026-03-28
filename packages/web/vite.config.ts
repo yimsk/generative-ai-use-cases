@@ -22,7 +22,11 @@ export default defineConfig(({ mode }) => ({
       ],
     },
   },
-  resolve: { alias: { './runtimeConfig': './runtimeConfig.browser' } },
+  resolve: {
+    alias: {
+      './runtimeConfig': './runtimeConfig.browser',
+    },
+  },
   plugins: [
     react({
       jsxRuntime: 'automatic',
