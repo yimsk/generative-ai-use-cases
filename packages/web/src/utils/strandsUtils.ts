@@ -377,6 +377,7 @@ type ContentBlockType = 'text' | 'toolUse' | 'reasoning' | null;
  */
 export class StrandsStreamProcessor {
   private currentContentBlockType: ContentBlockType = null;
+  private currentToolName: string | null = null;
   private toolUseBuffer: string = '';
   private textBuffer: string = ''; // Text buffer for research agent
   private isResearchAgent: boolean = false; // Flag to identify research agent
@@ -420,7 +421,11 @@ export class StrandsStreamProcessor {
           return { text: start.text };
         } else if ('toolUse' in start && start.toolUse) {
           this.currentContentBlockType = 'toolUse';
+          this.currentToolName = start.toolUse.name;
           this.toolUseBuffer = '';
+          if (start.toolUse.name === 'createChart') {
+            return { text: '', trace: '' };
+          }
           return { text: '', trace: `\`\`\`${start.toolUse.name}\n` };
         }
       }
@@ -440,6 +445,9 @@ export class StrandsStreamProcessor {
         } else if (delta.toolUse) {
           this.currentContentBlockType = 'toolUse';
           this.toolUseBuffer += delta.toolUse.input;
+          if (this.currentToolName === 'createChart') {
+            return { text: '', trace: '' };
+          }
           return { text: '', trace: delta.toolUse.input };
         } else if (delta.reasoningContent?.text) {
           this.currentContentBlockType = 'reasoning';
@@ -504,10 +512,22 @@ export class StrandsStreamProcessor {
           this.currentContentBlockType = null;
           return result;
         } else if (this.currentContentBlockType === 'toolUse') {
-          // Close the tool use block
-          const result = { text: '', trace: `\n\`\`\`\n` };
-          this.currentContentBlockType = null;
-          return result;
+          if (this.currentToolName === 'createChart') {
+            const result = {
+              text: `\n\`\`\`chart\n${this.toolUseBuffer}\n\`\`\`\n`,
+              trace: '',
+            };
+            this.currentContentBlockType = null;
+            this.currentToolName = null;
+            this.toolUseBuffer = '';
+            return result;
+          } else {
+            const result = { text: '', trace: `\n\`\`\`\n` };
+            this.currentContentBlockType = null;
+            this.currentToolName = null;
+            this.toolUseBuffer = '';
+            return result;
+          }
         }
         this.currentContentBlockType = null;
         return null;
@@ -573,6 +593,7 @@ export class StrandsStreamProcessor {
    */
   reset(): void {
     this.currentContentBlockType = null;
+    this.currentToolName = null;
     this.toolUseBuffer = '';
     this.textBuffer = '';
   }

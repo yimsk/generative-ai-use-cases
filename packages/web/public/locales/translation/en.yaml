@@ -128,6 +128,11 @@ auth:
   loading: Loading...
   login: Login
   title: Generative AI Use Cases on AWS
+chart:
+  download_svg: Download SVG
+  invalid_data: Invalid chart data
+  view_chart: View Chart
+  view_code: View Code
 chat:
   advanced_options: Advanced Options
   create_link: Create Link
@@ -924,11 +929,11 @@ monitor:
   secondary_language: Secondary Language
   start_recording: Start Recording
   stop_recording: Stop Recording
+  system_generated_context: System Context
+  system_generated_context_placeholder: AI-generated context will appear here...
   title: Real-Time Translation Monitor
   topic_model: Topic Model
   translation_model: Translation Model
-  system_generated_context: System Context
-  system_generated_context_placeholder: AI-generated context will appear here...
 navigation:
   agentChat: Agent Chat
   chat: Chat

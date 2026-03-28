@@ -40,6 +40,7 @@ import { useLocation } from 'react-router-dom';
 
 import { MermaidWithToggle } from './Mermaid/MermaidWithToggle';
 import { SvgWithToggle } from './Svg/SvgWithToggle';
+import { ChartWithToggle } from './Chart/ChartWithToggle';
 
 SyntaxHighlighter.registerLanguage('bash', bash);
 SyntaxHighlighter.registerLanguage('c', c);
@@ -154,6 +155,11 @@ const PreRenderer = (props: any) => {
       return <>{children}</>;
     }
 
+    // Skip <pre> tag for chart
+    if (className.includes('language-chart')) {
+      return <>{children}</>;
+    }
+
     // Skip <pre> tag for SVG (when language is svg, or xml/html with SVG content)
     if (
       className.includes('language-svg') ||
@@ -186,6 +192,11 @@ const CodeRenderer = memo(
     // Use not-prose to prevent prose styles from affecting the diagram container
     if (language === 'mermaid') {
       return <MermaidWithToggle code={codeText} />;
+    }
+
+    // Render charts with toggle
+    if (language === 'chart') {
+      return <ChartWithToggle code={codeText} />;
     }
 
     // Render SVG code with toggle (when language is svg, xml, or html and content is SVG)

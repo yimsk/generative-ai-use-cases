@@ -119,6 +119,11 @@ auth:
   loading: 読み込み中...
   login: ログイン
   title: Generative AI Use Cases on AWS
+chart:
+  download_svg: SVGをダウンロード
+  invalid_data: 無効なチャートデータ
+  view_chart: チャートを表示
+  view_code: コードを表示
 chat:
   advanced_options: 高度なオプション
   create_link: リンクの作成
@@ -770,11 +775,11 @@ monitor:
   secondary_language: セカンダリ言語
   start_recording: 録音を開始する
   stop_recording: 録音を停止する
+  system_generated_context: システムコンテキスト
+  system_generated_context_placeholder: AIが生成したコンテキストがここに表示されます...
   title: リアルタイム翻訳モニター
   topic_model: トピックモデル
   translation_model: 翻訳モデル
-  system_generated_context: システムコンテキスト
-  system_generated_context_placeholder: AIが生成したコンテキストがここに表示されます...
 navigation:
   agentChat: Agent チャット
   chat: チャット
