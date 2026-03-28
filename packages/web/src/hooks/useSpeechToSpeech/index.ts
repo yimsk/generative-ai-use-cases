@@ -16,7 +16,7 @@ const MIN_AUDIO_CHUNKS_PER_BATCH = 10;
 const MAX_AUDIO_CHUNKS_PER_BATCH = 20;
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
-  const binary = [];
+  const binary: string[] = [];
   const bytes = new Uint8Array(buffer);
   for (let i = 0; i < bytes.byteLength; i++) {
     binary.push(String.fromCharCode(bytes[i]));

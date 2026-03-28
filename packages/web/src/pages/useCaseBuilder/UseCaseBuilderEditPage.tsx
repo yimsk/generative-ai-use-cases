@@ -328,7 +328,7 @@ const UseCaseBuilderEditPage: React.FC = () => {
   }, [isUpdate, setPageTitle, t]);
 
   useEffect(() => {
-    const tmp = [];
+    const tmp: ErrorWithMenu[] = [];
 
     // eslint-disable-next-line no-irregular-whitespace
     if (title.replace(/[ 　]/g, '') === '') {
@@ -364,7 +364,7 @@ const UseCaseBuilderEditPage: React.FC = () => {
   ]);
 
   useEffect(() => {
-    const tmp = [];
+    const tmp: ErrorWithMenu[] = [];
 
     if (isDisabledUpdate) {
       tmp.push({

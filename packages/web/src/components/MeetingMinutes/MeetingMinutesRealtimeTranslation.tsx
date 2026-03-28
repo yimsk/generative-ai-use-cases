@@ -220,7 +220,7 @@ const MeetingMinutesRealtimeTranslation: React.FC<
         const targetLanguageName = getLanguageNameFromCode(targetLanguage);
 
         // Build combined context for translation
-        const contexts = [];
+        const contexts: string[] = [];
         if (userDefinedContext.trim()) {
           contexts.push(`User-defined context: ${userDefinedContext.trim()}`);
         }

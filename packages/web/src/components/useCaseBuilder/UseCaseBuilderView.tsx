@@ -234,7 +234,7 @@ const UseCaseBuilderView: React.FC<Props> = (props) => {
     );
     const hasKendra = retrieveKendraItems.length > 0;
     const hasKnowledgeBase = retrieveKnowledgeBaseItems.length > 0;
-    const tmpErrorMessages = [];
+    const tmpErrorMessages: string[] = [];
 
     if (hasKendra && !ragEnabled) {
       tmpErrorMessages.push(t('useCaseBuilder.error.rag_kendra_not_enabled'));

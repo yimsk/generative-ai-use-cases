@@ -66,7 +66,7 @@ const useRagKnowledgeBase = (id: string) => {
       pushMessage('user', content);
       pushMessage('assistant', t('rag.knowledgeBase.retrieving'));
 
-      let retrievedItems = null;
+      let retrievedItems: Awaited<ReturnType<typeof retrieve>> | null = null;
 
       try {
         retrievedItems = await retrieve(content);
