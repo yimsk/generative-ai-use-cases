@@ -11,9 +11,39 @@ import { PiSpinnerGap } from 'react-icons/pi';
 import useFileApi from '../hooks/useFileApi';
 import 'katex/dist/katex.min.css';
 
-// Reduce bundle size by registering only the languages used in the project
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { MermaidWithToggle } from './Mermaid/MermaidWithToggle';
+import { SvgWithToggle } from './Svg/SvgWithToggle';
+import { ChartWithToggle } from './Chart/ChartWithToggle';
+import { useLocation } from 'react-router-dom';
+
+export { MermaidWithToggle };
+
+// -- Typed renderer props --
+
+interface LinkRendererProps {
+  href?: string;
+  id?: string;
+  children?: React.ReactNode;
+}
+
+interface ImageRendererProps {
+  src?: string;
+  id?: string;
+}
+
+interface PreRendererProps {
+  children?: React.ReactNode;
+}
+
+interface CodeRendererProps {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+// -- Syntax highlighting registration --
+
 import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
 import c from 'react-syntax-highlighter/dist/esm/languages/prism/c';
 import cpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
@@ -36,112 +66,108 @@ import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typesc
 import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
 import xmlDoc from 'react-syntax-highlighter/dist/esm/languages/prism/xml-doc';
 import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
-import { useLocation } from 'react-router-dom';
 
-import { MermaidWithToggle } from './Mermaid/MermaidWithToggle';
-import { SvgWithToggle } from './Svg/SvgWithToggle';
-import { ChartWithToggle } from './Chart/ChartWithToggle';
-
-SyntaxHighlighter.registerLanguage('bash', bash);
-SyntaxHighlighter.registerLanguage('c', c);
-SyntaxHighlighter.registerLanguage('cpp', cpp);
-SyntaxHighlighter.registerLanguage('csharp', csharp);
-SyntaxHighlighter.registerLanguage('css', css);
-SyntaxHighlighter.registerLanguage('diff', diff);
-SyntaxHighlighter.registerLanguage('go', go);
-SyntaxHighlighter.registerLanguage('graphql', graphql);
-SyntaxHighlighter.registerLanguage('ini', ini);
-SyntaxHighlighter.registerLanguage('java', java);
-SyntaxHighlighter.registerLanguage('javascript', javascript);
-SyntaxHighlighter.registerLanguage('json', json);
-SyntaxHighlighter.registerLanguage('jsx', jsx);
-SyntaxHighlighter.registerLanguage('markdown', markdown);
-SyntaxHighlighter.registerLanguage('perl', perl);
-SyntaxHighlighter.registerLanguage('php', php);
-SyntaxHighlighter.registerLanguage('python', python);
-SyntaxHighlighter.registerLanguage('sql', sql);
-SyntaxHighlighter.registerLanguage('typescript', typescript);
-SyntaxHighlighter.registerLanguage('tsx', tsx);
-SyntaxHighlighter.registerLanguage('xml-doc', xmlDoc);
-SyntaxHighlighter.registerLanguage('yaml', yaml);
-
-// Re-export MermaidWithToggle for backward compatibility
-export { MermaidWithToggle };
-
-type Props = BaseProps & {
-  children: string;
-  prefix?: string;
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const LinkRenderer = (props: any) => {
-  // Currently, the file download function from S3 is only used in RAG chat
-  const { downloadDoc, isS3Url, downloading } = useRagFile();
-  const isS3 = useMemo(() => {
-    return isS3Url(props.href);
-  }, [isS3Url, props.href]);
-
-  // For Knowledge Base, we pass s3Type as a parameter
-  // since it may need to reference S3 from a different account
-  const location = useLocation();
-  const isKnowledgeBase = useMemo(() => {
-    return location.pathname.includes('/rag-knowledge-base');
-  }, [location.pathname]);
-
-  return (
-    <>
-      {isS3 ? (
-        <a
-          id={props.id}
-          onClick={() => {
-            if (!downloading) {
-              downloadDoc(
-                props.href,
-                isKnowledgeBase ? 'knowledgeBase' : 'default'
-              );
-            }
-          }}
-          className={`cursor-pointer ${downloading ? 'text-gray-400' : ''}`}>
-          {props.children}
-          {downloading && (
-            <PiSpinnerGap className="mx-2 inline-block animate-spin" />
-          )}
-        </a>
-      ) : (
-        <a
-          id={props.id}
-          href={props.href}
-          target={props.href.startsWith('#') ? '_self' : '_blank'}
-          rel="noreferrer">
-          {props.children}
-        </a>
-      )}
-    </>
+const registerSyntaxLanguages = () => {
+  const languages: [string, Parameters<typeof SyntaxHighlighter.registerLanguage>[1]][] = [
+    ['bash', bash],
+    ['c', c],
+    ['cpp', cpp],
+    ['csharp', csharp],
+    ['css', css],
+    ['diff', diff],
+    ['go', go],
+    ['graphql', graphql],
+    ['ini', ini],
+    ['java', java],
+    ['javascript', javascript],
+    ['json', json],
+    ['jsx', jsx],
+    ['markdown', markdown],
+    ['perl', perl],
+    ['php', php],
+    ['python', python],
+    ['sql', sql],
+    ['typescript', typescript],
+    ['tsx', tsx],
+    ['xml-doc', xmlDoc],
+    ['yaml', yaml],
+  ];
+  languages.forEach(([name, lang]) =>
+    SyntaxHighlighter.registerLanguage(name, lang)
   );
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ImageRenderer = (props: any) => {
-  const { isS3Url } = useRagFile();
-  const { getFileDownloadSignedUrl } = useFileApi();
-  const [src, setSrc] = useState(props.src);
+registerSyntaxLanguages();
 
-  useEffect(() => {
-    if (isS3Url(props.src)) {
-      getFileDownloadSignedUrl(props.src).then((url) => setSrc(url));
-    }
-  }, [getFileDownloadSignedUrl, isS3Url, props.src]);
+// -- SVG detection helper (pure) --
 
-  return <img id={props.id} src={src} />;
+const isSvgCode = (code: string): boolean => {
+  const trimmed = code.trim();
+  return trimmed.startsWith('<svg') || trimmed.startsWith('<?xml');
 };
 
-// PreRenderer to skip <pre> tag for mermaid and SVG code blocks
-// This prevents the dark prose background from appearing around these diagrams
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PreRenderer = (props: any) => {
-  const { children } = props;
+// -- S3 / file resolution renderers --
 
-  // Check if children is a code element with 'language-mermaid' or SVG-related class
+const LinkRenderer: React.FC<LinkRendererProps> = ({
+  href,
+  id,
+  children,
+}) => {
+  const { downloadDoc, isS3Url, downloading } = useRagFile();
+  const isS3 = useMemo(() => isS3Url(href ?? ''), [isS3Url, href]);
+
+  const location = useLocation();
+  const isKnowledgeBase = useMemo(
+    () => location.pathname.includes('/rag-knowledge-base'),
+    [location.pathname]
+  );
+
+  if (isS3) {
+    return (
+      <a
+        id={id}
+        onClick={() => {
+          if (!downloading) {
+            downloadDoc(href!, isKnowledgeBase ? 'knowledgeBase' : 'default');
+          }
+        }}
+        className={`cursor-pointer ${downloading ? 'text-gray-400' : ''}`}>
+        {children}
+        {downloading && (
+          <PiSpinnerGap className="mx-2 inline-block animate-spin" />
+        )}
+      </a>
+    );
+  }
+
+  return (
+    <a
+      id={id}
+      href={href}
+      target={href?.startsWith('#') ? '_self' : '_blank'}
+      rel="noreferrer">
+      {children}
+    </a>
+  );
+};
+
+const ImageRenderer: React.FC<ImageRendererProps> = ({ src, id }) => {
+  const { isS3Url } = useRagFile();
+  const { getFileDownloadSignedUrl } = useFileApi();
+  const [resolvedSrc, setResolvedSrc] = useState(src);
+
+  useEffect(() => {
+    if (isS3Url(src ?? '')) {
+      getFileDownloadSignedUrl(src!).then((url) => setResolvedSrc(url));
+    }
+  }, [getFileDownloadSignedUrl, isS3Url, src]);
+
+  return <img id={id} src={resolvedSrc} />;
+};
+
+// -- Diagram / special-case renderers --
+
+const PreRenderer: React.FC<PreRendererProps> = ({ children }) => {
   if (React.isValidElement(children)) {
     const childProps = children.props as {
       className?: string;
@@ -150,17 +176,12 @@ const PreRenderer = (props: any) => {
     const className = childProps?.className || '';
     const codeContent = String(childProps?.children || '').trim();
 
-    // Skip <pre> tag for mermaid
     if (className.includes('language-mermaid')) {
       return <>{children}</>;
     }
-
-    // Skip <pre> tag for chart
     if (className.includes('language-chart')) {
       return <>{children}</>;
     }
-
-    // Skip <pre> tag for SVG (when language is svg, or xml/html with SVG content)
     if (
       className.includes('language-svg') ||
       ((className.includes('language-xml') ||
@@ -171,35 +192,23 @@ const PreRenderer = (props: any) => {
     }
   }
 
-  // For other code blocks, render normal <pre> tag
-  return <pre {...props}>{children}</pre>;
-};
-
-// Helper function to check if code is SVG
-const isSvgCode = (code: string): boolean => {
-  const trimmed = code.trim();
-  return trimmed.startsWith('<svg') || trimmed.startsWith('<?xml');
+  return <pre>{children}</pre>;
 };
 
 const CodeRenderer = memo(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (props: any) => {
-    const language = /language-(\w+)/.exec(props.className || '')?.[1];
-    const codeText = String(props.children).replace(/\n$/, '');
+  ({ className, children }: CodeRendererProps) => {
+    const language = /language-(\w+)/.exec(className || '')?.[1];
+    const codeText = String(children).replace(/\n$/, '');
     const isCodeBlock = codeText.includes('\n');
 
-    // Render Mermaid diagrams with toggle
-    // Use not-prose to prevent prose styles from affecting the diagram container
     if (language === 'mermaid') {
       return <MermaidWithToggle code={codeText} />;
     }
 
-    // Render charts with toggle
     if (language === 'chart') {
       return <ChartWithToggle code={codeText} />;
     }
 
-    // Render SVG code with toggle (when language is svg, xml, or html and content is SVG)
     if (
       (language === 'svg' ||
         ((language === 'xml' || language === 'html') && isSvgCode(codeText))) &&
@@ -211,7 +220,6 @@ const CodeRenderer = memo(
     return (
       <>
         {language ? (
-          // Code block with language
           <>
             <div className="flex">
               <span className="flex-auto">{language}</span>
@@ -227,7 +235,6 @@ const CodeRenderer = memo(
             </SyntaxHighlighter>
           </>
         ) : isCodeBlock ? (
-          // Code block without language
           <code className="block rounded-md py-1">
             {codeText.split('\n').map((line, index) => (
               <span key={`line-${index}`} className="block px-1 py-0">
@@ -236,7 +243,6 @@ const CodeRenderer = memo(
             ))}
           </code>
         ) : (
-          // Inline code
           <span className="bg-aws-squid-ink/10 border-aws-squid-ink/30 inline rounded-md border px-1 py-0.5">
             {codeText}
           </span>
@@ -244,14 +250,17 @@ const CodeRenderer = memo(
       </>
     );
   },
-  (prevProps, nextProps) => {
-    // Only re-render if the code content or language changes
-    return (
-      String(prevProps.children) === String(nextProps.children) &&
-      prevProps.className === nextProps.className
-    );
-  }
+  (prev, next) =>
+    String(prev.children) === String(next.children) &&
+    prev.className === next.className
 );
+
+// -- Main Markdown component --
+
+type Props = BaseProps & {
+  children: string;
+  prefix?: string;
+};
 
 const Markdown = memo(({ className, prefix, children }: Props) => {
   return (
