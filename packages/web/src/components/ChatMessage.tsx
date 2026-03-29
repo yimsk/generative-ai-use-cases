@@ -249,14 +249,16 @@ const ChatMessage: React.FC<Props> = (props) => {
               </>
             )}
             {chatContent?.role === 'assistant' && (
-              <Markdown prefix={`${props.idx}`}>
-                {typingTextOutput +
-                  `${
-                    props.loading && (chatContent?.content ?? '') !== ''
-                      ? '▍'
-                      : ''
-                  }`}
-              </Markdown>
+              <>
+                <Markdown prefix={`${props.idx}`}>{typingTextOutput}</Markdown>
+                {props.loading && (chatContent?.content ?? '') !== '' && (
+                  <div
+                    data-testid="assistant-stream-cursor"
+                    className="animate-pulse">
+                    ▍
+                  </div>
+                )}
+              </>
             )}
             {chatContent?.role === 'system' && (
               <div className="whitespace-pre-wrap">{typingTextOutput}</div>

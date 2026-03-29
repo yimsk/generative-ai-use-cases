@@ -485,8 +485,15 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
     [validated]
   );
 
+  const canRenderChartContainer =
+    parsed.error === null && chartData !== null && !(mapData && geoError);
+
   useEffect(() => {
     let cancelled = false;
+
+    if (!canRenderChartContainer) {
+      return;
+    }
 
     const handleResize = () => {
       chartRef.current?.resize();
@@ -544,7 +551,12 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
       setChartReady(false);
       onChartInit?.(null);
     };
-  }, [hasRenderableDimensions, onChartInit, scheduleResize]);
+  }, [
+    canRenderChartContainer,
+    hasRenderableDimensions,
+    onChartInit,
+    scheduleResize,
+  ]);
 
   useEffect(() => {
     if (
@@ -593,14 +605,6 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
     return <ErrorDisplay rawJson={rawJson} />;
   }
 
-  if (mapData && geoLoading) {
-    return (
-      <div className="flex h-[300px] items-center justify-center">
-        <div className="text-gray-500">{t('common.loading')}</div>
-      </div>
-    );
-  }
-
   if (mapData && geoError) {
     return (
       <div className="rounded-lg border border-red-300 bg-red-50 p-4">
@@ -610,12 +614,27 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
     );
   }
 
+  const showMapLoadingOverlay = Boolean(mapData && geoLoading);
+
   return (
     <div>
       {chartData.title && (
         <h3 className="mb-2 text-lg font-semibold">{chartData.title}</h3>
       )}
-      <div ref={containerRef} style={{ width: '100%', height: 300 }} />
+      <div className="relative">
+        <div
+          ref={containerRef}
+          data-testid="echarts-container"
+          style={{ width: '100%', height: 300 }}
+        />
+        {showMapLoadingOverlay && (
+          <div
+            data-testid="map-loading-overlay"
+            className="absolute inset-0 flex items-center justify-center bg-white/70">
+            <div className="text-gray-500">{t('common.loading')}</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

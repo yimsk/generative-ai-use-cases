@@ -120,6 +120,17 @@ const candlestickData = {
   ],
 };
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { promise, resolve, reject };
+}
+
 describe('EChartsRenderer', () => {
   beforeEach(() => {
     getBoundingClientRectSpy = vi
@@ -434,6 +445,52 @@ describe('EChartsRenderer', () => {
         );
       });
     });
+
+    it('keeps the chart container mounted while GeoJSON is loading', async () => {
+      const jsonDeferred = createDeferred<{
+        type: string;
+        features: never[];
+      }>();
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => jsonDeferred.promise,
+      });
+
+      const mapJson = JSON.stringify({
+        type: 'map',
+        region: 'japan',
+        detail: 'prefecture',
+        data: [{ name: prefectureName, value: 13960000 }],
+      });
+
+      render(<EChartsRenderer rawJson={mapJson} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('map-loading-overlay')).toBeTruthy();
+      });
+
+      expect(screen.getByTestId('echarts-container')).toBeTruthy();
+      expect(mockInit).toHaveBeenCalledTimes(1);
+
+      jsonDeferred.resolve({
+        type: 'FeatureCollection',
+        features: [],
+      });
+
+      await waitFor(() => {
+        expect(mockSetOption).toHaveBeenCalledWith(
+          expect.objectContaining({
+            series: expect.arrayContaining([
+              expect.objectContaining({ type: 'map', map: 'japan' }),
+            ]),
+          }),
+          true
+        );
+      });
+
+      expect(mockInit).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('renders multi-series chart', async () => {
@@ -473,6 +530,26 @@ describe('EChartsRenderer', () => {
 
     expect(screen.getByText('chart.invalid_data')).toBeTruthy();
     expect(mockInit).not.toHaveBeenCalled();
+  });
+
+  it('initializes when chart data becomes valid after first render', async () => {
+    const { rerender } = render(<EChartsRenderer rawJson='{"foo":"bar"}' />);
+
+    expect(mockInit).not.toHaveBeenCalled();
+
+    rerender(<EChartsRenderer rawJson={JSON.stringify(singleSeriesData)} />);
+
+    await waitFor(() => {
+      expect(mockInit).toHaveBeenCalledTimes(1);
+      expect(mockSetOption).toHaveBeenCalledWith(
+        expect.objectContaining({
+          series: [
+            expect.objectContaining({ type: 'bar', data: [10, 20, 30] }),
+          ],
+        }),
+        true
+      );
+    });
   });
 
   it('renders title when provided', () => {
