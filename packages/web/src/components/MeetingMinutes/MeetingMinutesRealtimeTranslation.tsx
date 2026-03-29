@@ -7,7 +7,6 @@ import React, {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageCode } from '@aws-sdk/client-transcribe-streaming';
-import { Transcript } from 'generative-ai-use-cases';
 import Select from '../Select';
 import Textarea from '../Textarea';
 import MeetingMinutesTranscriptSegment from './MeetingMinutesTranscriptSegment';
@@ -18,33 +17,19 @@ import useScreenAudio from '../../hooks/useScreenAudio';
 import useRealtimeTranslation from '../../hooks/useRealtimeTranslation';
 import useChatApi from '../../hooks/useChatApi';
 import { MODELS } from '../../hooks/useModel';
-import {
-  updateTranslationSegments,
-  type TranslationSegment,
-} from './MeetingMinutesSegmentSplitter';
-import {
-  generateSystemContext,
-  shouldGenerateContext,
-  getLanguageNameFromCode,
-  getRecentSegmentsContext,
-} from './MeetingMinutesContextGenerator';
+import useMeetingMinutesTranslationQueue from './useMeetingMinutesTranslationQueue';
+import useMeetingMinutesContextTimer from './useMeetingMinutesContextTimer';
 import {
   getTranslationTarget,
   resolveSourceLanguage,
 } from '../../utils/realtimeTranslationDirection';
-
-// Real-time transcript segment for chronological integration
-interface RealtimeSegment {
-  resultId: string;
-  source: 'microphone' | 'screen';
-  startTime: number;
-  endTime: number;
-  isPartial: boolean;
-  transcripts: Transcript[];
-  sessionId: number; // Session identifier for continuity
-  languageCode?: string; // Language code from Transcribe response
-  translationSegments: TranslationSegment[];
-}
+import {
+  buildRealtimeText,
+  createRealtimeSegment,
+  mergeRealtimeSegment,
+  sortRealtimeSegments,
+  type RealtimeSegment,
+} from './MeetingMinutesRealtimeTranslationOrchestrator';
 
 interface MeetingMinutesRealtimeTranslationProps {
   /** Callback when transcript text changes */
@@ -71,7 +56,6 @@ const MeetingMinutesRealtimeTranslation: React.FC<
   const { t } = useTranslation();
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef<boolean>(true);
-  const generateSystemContextRef = useRef<(() => Promise<void>) | null>(null);
   const realtimeSegmentsRef = useRef<RealtimeSegment[]>([]);
 
   // Microphone and screen audio hooks
@@ -149,222 +133,12 @@ const MeetingMinutesRealtimeTranslation: React.FC<
   // Simple session management
   const [currentSessionId, setCurrentSessionId] = useState(0);
 
-  // Latest request timestamp tracking for race condition handling
-  const [latestRequestTimestamps, setLatestRequestTimestamps] = useState<
-    Map<string, number>
-  >(new Map());
-
   // Translation hook
   const { availableModels, translate, translationInterval } =
     useRealtimeTranslation();
 
-  // Helper function to translate individual sentences
-  const translateSentence = useCallback(
-    async (
-      segment: RealtimeSegment,
-      sentenceIndex: number,
-      translationSegment: TranslationSegment
-    ) => {
-      const requestId = `${segment.resultId}-${sentenceIndex}`;
-      const requestTimestamp = Date.now();
-
-      // Update latest request timestamp for this segment
-      setLatestRequestTimestamps((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(requestId, requestTimestamp);
-        return newMap;
-      });
-
-      // Update translation segment with request timestamp
-      setRealtimeSegments((prev) =>
-        prev.map((seg) => {
-          if (
-            seg.resultId !== segment.resultId ||
-            seg.source !== segment.source
-          ) {
-            return seg;
-          }
-
-          return {
-            ...seg,
-            translationSegments: seg.translationSegments.map((ts, index) => {
-              if (index !== sentenceIndex) {
-                return ts;
-              }
-
-              return {
-                ...ts,
-                requestTimestamp,
-              };
-            }),
-          };
-        })
-      );
-
-      try {
-        const sourceLanguage = resolveSourceLanguage(
-          segment.transcripts,
-          segment.languageCode,
-          primaryLanguage,
-          secondaryLanguage
-        );
-
-        // Determine translation target language using helper function
-        const targetLanguage = getTranslationTarget(
-          translationType,
-          sourceLanguage,
-          primaryLanguage,
-          secondaryLanguage
-        );
-
-        const targetLanguageName = getLanguageNameFromCode(targetLanguage);
-
-        // Build combined context for translation
-        const contexts: string[] = [];
-        if (userDefinedContext.trim()) {
-          contexts.push(`User-defined context: ${userDefinedContext.trim()}`);
-        }
-        if (systemGeneratedContext.trim()) {
-          contexts.push(
-            `System-generated context: ${systemGeneratedContext.trim()}`
-          );
-        }
-
-        const recentSegmentsText = getRecentSegmentsContext(realtimeSegments);
-        if (recentSegmentsText) {
-          contexts.push(`Recent conversation context: ${recentSegmentsText}`);
-        }
-
-        const combinedContext =
-          contexts.length > 0 ? contexts.join('\n\n') : undefined;
-
-        const translation = await translate(
-          translationSegment.text,
-          selectedTranslationModel,
-          targetLanguageName,
-          combinedContext
-        );
-
-        // Check if this is still the latest request before updating UI
-        const currentLatestTimestamp = latestRequestTimestamps.get(requestId);
-        const isLatestRequest =
-          !currentLatestTimestamp || requestTimestamp >= currentLatestTimestamp;
-
-        // Only update UI if we have a valid translation result and this is the latest request
-        if (isLatestRequest && translation !== null) {
-          // Update translation segment state only if this is the latest request
-          setRealtimeSegments((prev) =>
-            prev.map((seg) => {
-              if (
-                seg.resultId !== segment.resultId ||
-                seg.source !== segment.source
-              ) {
-                return seg;
-              }
-
-              return {
-                ...seg,
-                translationSegments: seg.translationSegments.map(
-                  (ts, index) => {
-                    if (index !== sentenceIndex) {
-                      return ts;
-                    }
-
-                    return {
-                      ...ts,
-                      translation: translation || undefined,
-                      needsTranslation: ts.text !== translationSegment.text,
-                      lastTranslatedText: translationSegment.text,
-                    };
-                  }
-                ),
-              };
-            })
-          );
-        }
-      } catch (error) {
-        // On error, skip UI update (as requested by user)
-        console.error('Failed to translate sentence:', error);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      selectedTranslationModel,
-      secondaryLanguage,
-      userDefinedContext,
-      systemGeneratedContext,
-      translate,
-      setRealtimeSegments,
-      latestRequestTimestamps,
-      setLatestRequestTimestamps,
-      // Note: getLanguageNameFromCode and getRecentSegmentsContext are external functions and stable
-    ]
-  );
-
   // Hook for generating system context
   const { predict } = useChatApi();
-
-  // Generate system context based on transcript history
-  const generateSystemContextCallback = useCallback(async () => {
-    const currentlyRecording = micRecording || screenRecording;
-
-    if (
-      !shouldGenerateContext(
-        realtimeTranslationEnabled,
-        currentlyRecording,
-        realtimeSegments
-      )
-    ) {
-      return;
-    }
-
-    const result = await generateSystemContext(
-      realtimeSegments,
-      secondaryLanguage,
-      predict
-    );
-
-    if (result) {
-      setSystemGeneratedContext(result);
-    }
-  }, [
-    realtimeTranslationEnabled,
-    micRecording,
-    screenRecording,
-    realtimeSegments,
-    secondaryLanguage,
-    predict,
-  ]);
-
-  // Update ref with latest function
-  generateSystemContextRef.current = generateSystemContextCallback;
-
-  // Timer for generating system context every minute
-  useEffect(() => {
-    const currentlyRecording = micRecording || screenRecording;
-
-    if (!realtimeTranslationEnabled || !currentlyRecording) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      if (generateSystemContextRef.current) {
-        generateSystemContextRef.current();
-      }
-    }, 60000); // 1 minute = 60,000ms
-
-    // Initial generation after 30 seconds to get some content
-    const initialTimeout = setTimeout(() => {
-      if (generateSystemContextRef.current) {
-        generateSystemContextRef.current();
-      }
-    }, 30000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(initialTimeout);
-    };
-  }, [realtimeTranslationEnabled, micRecording, screenRecording]);
 
   // Set default translation model on mount
   useEffect(() => {
@@ -418,29 +192,11 @@ const MeetingMinutesRealtimeTranslation: React.FC<
 
   // Real-time text output
   const realtimeText: string = useMemo(() => {
-    const sortedSegments = [...realtimeSegments].sort((a, b) => {
-      // Sort by session ID first, then by time within each session
-      if (a.sessionId !== b.sessionId) {
-        return a.sessionId - b.sessionId;
-      }
-      return a.startTime - b.startTime;
+    return buildRealtimeText({
+      realtimeSegments,
+      speakerMapping,
+      formatTime,
     });
-
-    return sortedSegments
-      .map((segment) => {
-        const timeStr = `[${formatTime(segment.startTime)}]`;
-        const partialIndicator = segment.isPartial ? ' (...)' : '';
-
-        return segment.transcripts
-          .map((transcript) => {
-            const speakerLabel = transcript.speakerLabel
-              ? `${speakerMapping[transcript.speakerLabel] || transcript.speakerLabel}: `
-              : '';
-            return `${timeStr} ${speakerLabel}${transcript.transcript}${partialIndicator}`;
-          })
-          .join('\n');
-      })
-      .join('\n');
   }, [realtimeSegments, speakerMapping, formatTime]);
 
   // Auto scroll to bottom when transcript updates if user was at bottom
@@ -469,54 +225,9 @@ const MeetingMinutesRealtimeTranslation: React.FC<
     onTranscriptChange?.(realtimeText);
   }, [realtimeText, onTranscriptChange]);
 
-  // Real-time integration of raw transcripts
   const updateRealtimeSegments = useCallback(
     (newSegment: RealtimeSegment) => {
-      setRealtimeSegments((prev) => {
-        const existingIndex = prev.findIndex(
-          (seg) =>
-            seg.resultId === newSegment.resultId &&
-            seg.source === newSegment.source
-        );
-
-        const currentText = newSegment.transcripts
-          .map((transcript) => transcript.transcript)
-          .join(' ')
-          .trim();
-
-        if (existingIndex >= 0) {
-          const updated = [...prev];
-          const currentSegment = updated[existingIndex];
-
-          // Simple overwrite - no complex logic
-          const updatedTranslationSegments = updateTranslationSegments(
-            currentText,
-            newSegment.languageCode,
-            currentSegment.translationSegments
-          );
-
-          updated[existingIndex] = {
-            ...newSegment,
-            translationSegments: updatedTranslationSegments,
-          };
-          return updated;
-        } else {
-          // Use the new updateTranslationSegments function for new segments (with empty existing segments)
-          const translationSegments = updateTranslationSegments(
-            currentText,
-            newSegment.languageCode,
-            [] // Empty existing segments for new segment
-          );
-
-          return [
-            ...prev,
-            {
-              ...newSegment,
-              translationSegments,
-            },
-          ];
-        }
-      });
+      setRealtimeSegments((prev) => mergeRealtimeSegment(prev, newSegment));
     },
     [setRealtimeSegments]
   );
@@ -524,34 +235,15 @@ const MeetingMinutesRealtimeTranslation: React.FC<
   // Process microphone raw transcripts
   useEffect(() => {
     if (micRawTranscripts && micRawTranscripts.length > 0) {
-      // Process ALL segments from micRawTranscripts, not just the latest
       micRawTranscripts.forEach((rawSegment) => {
-        const currentText = rawSegment.transcripts
-          .map((transcript) => transcript.transcript)
-          .join(' ')
-          .trim();
-
-        const translationSegments = updateTranslationSegments(
-          currentText,
-          rawSegment.languageCode ||
-            (primaryLanguage === 'auto' ? undefined : primaryLanguage),
-          [] // Empty existing segments for new segment
+        updateRealtimeSegments(
+          createRealtimeSegment({
+            rawSegment,
+            source: 'microphone',
+            sessionId: currentSessionId,
+            primaryLanguage,
+          })
         );
-
-        const segment: RealtimeSegment = {
-          resultId: rawSegment.resultId,
-          source: 'microphone',
-          startTime: rawSegment.startTime,
-          endTime: rawSegment.endTime,
-          isPartial: rawSegment.isPartial,
-          transcripts: rawSegment.transcripts,
-          sessionId: currentSessionId,
-          languageCode:
-            rawSegment.languageCode ||
-            (primaryLanguage === 'auto' ? undefined : primaryLanguage),
-          translationSegments,
-        };
-        updateRealtimeSegments(segment);
       });
     }
   }, [
@@ -568,34 +260,15 @@ const MeetingMinutesRealtimeTranslation: React.FC<
       screenRawTranscripts &&
       screenRawTranscripts.length > 0
     ) {
-      // Process ALL segments from screenRawTranscripts, not just the latest
       screenRawTranscripts.forEach((rawSegment) => {
-        const currentText = rawSegment.transcripts
-          .map((transcript) => transcript.transcript)
-          .join(' ')
-          .trim();
-
-        const translationSegments = updateTranslationSegments(
-          currentText,
-          rawSegment.languageCode ||
-            (primaryLanguage === 'auto' ? undefined : primaryLanguage),
-          [] // Empty existing segments for new segment
+        updateRealtimeSegments(
+          createRealtimeSegment({
+            rawSegment,
+            source: 'screen',
+            sessionId: currentSessionId,
+            primaryLanguage,
+          })
         );
-
-        const segment: RealtimeSegment = {
-          resultId: rawSegment.resultId,
-          source: 'screen',
-          startTime: rawSegment.startTime,
-          endTime: rawSegment.endTime,
-          isPartial: rawSegment.isPartial,
-          transcripts: rawSegment.transcripts,
-          sessionId: currentSessionId,
-          languageCode:
-            rawSegment.languageCode ||
-            (primaryLanguage === 'auto' ? undefined : primaryLanguage),
-          translationSegments,
-        };
-        updateRealtimeSegments(segment);
       });
     }
   }, [
@@ -606,44 +279,31 @@ const MeetingMinutesRealtimeTranslation: React.FC<
     primaryLanguage,
   ]);
 
-  // Handle interval translation for partial segments
-  useEffect(() => {
-    if (!realtimeTranslationEnabled || !selectedTranslationModel) {
-      return;
-    }
+  // Recording states
+  const isRecording = micRecording || screenRecording;
 
-    const intervalId = setInterval(async () => {
-      const currentSegments = realtimeSegmentsRef.current;
-
-      for (const segment of currentSegments) {
-        // Handle translation for all segments (unified approach)
-        const sentencesToTranslate = segment.translationSegments.filter(
-          (translationSegment) =>
-            translationSegment.needsTranslation &&
-            translationSegment.text.trim()
-        );
-
-        for (const translationSentence of sentencesToTranslate) {
-          const sentenceIndex =
-            segment.translationSegments.indexOf(translationSentence);
-          // Translate individual sentence (duplicate prevention is now handled inside translateSentence)
-          await translateSentence(segment, sentenceIndex, translationSentence);
-        }
-      }
-    }, translationInterval);
-
-    return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
+  useMeetingMinutesTranslationQueue({
     realtimeTranslationEnabled,
     selectedTranslationModel,
     translationInterval,
-    // Note: We intentionally omit function dependencies to prevent infinite loop recreation of this useEffect.
-    // The interval function accesses current values through closure, which is acceptable for this use case.
-  ]);
+    realtimeSegmentsRef,
+    setRealtimeSegments,
+    translate,
+    primaryLanguage,
+    secondaryLanguage,
+    translationType,
+    userDefinedContext,
+    systemGeneratedContext,
+  });
 
-  // Recording states
-  const isRecording = micRecording || screenRecording;
+  useMeetingMinutesContextTimer({
+    realtimeTranslationEnabled,
+    isRecording,
+    realtimeSegments,
+    targetLanguage: secondaryLanguage,
+    predict,
+    onGeneratedContext: setSystemGeneratedContext,
+  });
 
   // Clear function
   const handleClear = useCallback(() => {
@@ -846,9 +506,9 @@ const MeetingMinutesRealtimeTranslation: React.FC<
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm text-gray-600">
+              <div className="mb-1 block text-sm text-gray-600">
                 {t('translate.userDefinedContext')}
-              </label>
+              </div>
               <Textarea
                 className="h-20 w-full text-sm"
                 placeholder={t('translate.userDefinedContextPlaceholder')}
@@ -857,9 +517,9 @@ const MeetingMinutesRealtimeTranslation: React.FC<
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm text-gray-600">
+              <div className="mb-1 block text-sm text-gray-600">
                 {t('translate.systemGeneratedContext')}
-              </label>
+              </div>
               <Textarea
                 className="h-20 w-full text-sm"
                 placeholder={t('translate.systemGeneratedContextPlaceholder')}
@@ -909,15 +569,8 @@ const MeetingMinutesRealtimeTranslation: React.FC<
               </div>
             </div>
           ) : (
-            [...realtimeSegments]
-              .sort((a, b) => {
-                // Sort by session ID first, then by time within each session
-                if (a.sessionId !== b.sessionId) {
-                  return a.sessionId - b.sessionId;
-                }
-                return a.startTime - b.startTime;
-              })
-              .map((segment, index, sortedSegments) => {
+            sortRealtimeSegments(realtimeSegments).map(
+              (segment, index, sortedSegments) => {
                 const prevSegment =
                   index > 0 ? sortedSegments[index - 1] : null;
                 const isNewSession =
@@ -971,7 +624,8 @@ const MeetingMinutesRealtimeTranslation: React.FC<
                     />
                   </React.Fragment>
                 );
-              })
+              }
+            )
           )}
         </div>
       </div>
