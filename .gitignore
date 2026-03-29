@@ -16,3 +16,4 @@ site*/
 .kiro/specs
 deploy.log
 .sisyphus/
+packages/cdk/parameter.local.ts

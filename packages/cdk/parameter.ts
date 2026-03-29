@@ -1,4 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import {
   StackInput,
   stackInputSchema,
@@ -13,8 +15,43 @@ const getContext = (app: cdk.App): StackInput => {
   return params;
 };
 
+type ParameterEnvOverrides = Partial<Record<string, Partial<StackInput>>>;
+
+const loadLocalEnvs = (): ParameterEnvOverrides => {
+  const localModulePath = join(__dirname, 'parameter.local');
+  const localTypeScriptPath = join(__dirname, 'parameter.local.ts');
+  const localJavaScriptPath = join(__dirname, 'parameter.local.js');
+
+  if (!existsSync(localTypeScriptPath) && !existsSync(localJavaScriptPath)) {
+    return {};
+  }
+
+  const localModule = require(localModulePath) as {
+    localEnvs?: ParameterEnvOverrides;
+    default?: ParameterEnvOverrides;
+  };
+
+  return localModule.localEnvs ?? localModule.default ?? {};
+};
+
+const mergeEnvs = (
+  baseEnvs: ParameterEnvOverrides,
+  localEnvs: ParameterEnvOverrides
+): ParameterEnvOverrides => {
+  const mergedEnvs: ParameterEnvOverrides = { ...baseEnvs };
+
+  for (const [envName, envConfig] of Object.entries(localEnvs)) {
+    mergedEnvs[envName] = {
+      ...mergedEnvs[envName],
+      ...envConfig,
+    };
+  }
+
+  return mergedEnvs;
+};
+
 // If you want to define parameters directly
-const envs: Record<string, Partial<StackInput>> = {
+const baseEnvs: Record<string, Partial<StackInput>> = {
   // If you want to define an anonymous environment, uncomment the following and the content of cdk.json will be ignored.
   // If you want to define an anonymous environment in parameter.ts, uncomment the following and the content of cdk.json will be ignored.
   // '': {
@@ -22,43 +59,7 @@ const envs: Record<string, Partial<StackInput>> = {
   //   // If you want to override the default settings, add the following
   // },
   dev: {
-    selfSignUpEnabled: true,
-    modelIds: [
-      'global.anthropic.claude-opus-4-5-20251101-v1:0',
-      'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
-      'global.anthropic.claude-haiku-4-5-20251001-v1:0',
-      'global.amazon.nova-2-lite-v1:0',
-      // === Custom models (not in upstream GenU) ===
-      'deepseek.v3.2',
-      'minimax.minimax-m2.1',
-      'zai.glm-4.7',
-      'zai.glm-4.7-flash',
-      'moonshotai.kimi-k2.5',
-      'qwen.qwen3-coder-next',
-    ],
-    imageGenerationModelIds: ['amazon.nova-canvas-v1:0'],
-    videoGenerationModelIds: ['amazon.nova-reel-v1:0'],
-    speechToSpeechModelIds: ['amazon.nova-sonic-v1:0'],
-    agentEnabled: true,
-    createGenericAgentCoreRuntime: true,
-    ragKnowledgeBaseEnabled: true,
-    agentCoreExternalRuntimes: [
-      {
-        name: '法令Agent',
-        arn: 'arn:aws:bedrock-agentcore:us-east-1:767397786624:runtime/lc_agent_dev-G926ztHUBZ',
-        description: '法令についてなんでも調べられます',
-      },
-      {
-        name: '自治体仕様書Agent',
-        arn: 'arn:aws:bedrock-agentcore:us-east-1:767397786624:runtime/ok_agent_dev-xnSJ2aBTN0',
-        description: '自治体標準化の仕様書について調べられます',
-      },
-      {
-        name: '統計Agent',
-        arn: 'arn:aws:bedrock-agentcore:us-east-1:767397786624:runtime/estat_agent_dev-hatoXl3TjV',
-        description: 'e-Stat政府統計データを検索・取得できます',
-      },
-    ],
+    // Parameters for development environment
   },
   staging: {
     // Parameters for staging environment
@@ -68,6 +69,8 @@ const envs: Record<string, Partial<StackInput>> = {
   },
   // If you need other environments, customize them as needed
 };
+
+const envs = mergeEnvs(baseEnvs, loadLocalEnvs());
 
 // For backward compatibility, get parameters from CDK Context > parameter.ts
 export const getParams = (app: cdk.App): ProcessedStackInput => {
