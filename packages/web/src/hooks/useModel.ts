@@ -1,178 +1,193 @@
-import { Model, ModelConfiguration, AgentInfo } from 'generative-ai-use-cases';
+import { Model, ModelConfiguration, AgentInfo, Flow } from 'generative-ai-use-cases';
 import {
   CRI_PREFIX_PATTERN,
   modelMetadata,
 } from '@generative-ai-use-cases/common';
 
-const modelRegion = import.meta.env.VITE_APP_MODEL_REGION;
+// ============== Config Parser Functions ==============
 
-// Get model names and other environment variables
-const bedrockModelConfigs = (
-  JSON.parse(import.meta.env.VITE_APP_MODEL_IDS) as ModelConfiguration[]
-)
-  .map((model) => ({
-    modelId: model.modelId.trim(),
-    region: model.region.trim(),
-  }))
-  .filter((model) => model.modelId);
+function parseModelConfigurations(
+  envValue: string | undefined,
+  envVarName: string
+): ModelConfiguration[] {
+  if (!envValue) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(envValue) as ModelConfiguration[];
+    if (!Array.isArray(parsed)) {
+      throw new Error(`${envVarName} must be a JSON array`);
+    }
+    return parsed
+      .map((model) => ({
+        modelId: model.modelId?.trim() ?? '',
+        region: model.region?.trim() ?? '',
+      }))
+      .filter((model) => model.modelId);
+  } catch (error) {
+    console.error(
+      `Failed to parse ${envVarName}:`,
+      error instanceof Error ? error.message : String(error)
+    );
+    throw new Error(
+      `Invalid environment variable ${envVarName}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+function parseAgents(
+  builtinJson: string | undefined,
+  customJson: string | undefined
+): AgentInfo[] {
+  const parseAgentJson = (json: string | undefined, source: string): AgentInfo[] => {
+    if (!json || json.trim() === '') {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(json) as AgentInfo[];
+      if (!Array.isArray(parsed)) {
+        console.warn(`${source} is not an array, using empty array`);
+        return [];
+      }
+      return parsed;
+    } catch (error) {
+      console.warn(`Failed to parse ${source}:`, error);
+      return [];
+    }
+  };
+
+  const builtinAgents = parseAgentJson(builtinJson, 'builtin agents');
+  const customAgents = parseAgentJson(customJson, 'custom agents');
+  return [...builtinAgents, ...customAgents];
+}
+
+function parseFlows(envValue: string | undefined): Flow[] {
+  if (!envValue) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(envValue) as Flow[];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed;
+  } catch {
+    return [];
+  }
+}
+
+// ============== Environment Config Loading ==============
+
+const modelRegion = import.meta.env.VITE_APP_MODEL_REGION ?? '';
+
+// Parse all model configurations with explicit error handling
+const bedrockModelConfigs = parseModelConfigurations(
+  import.meta.env.VITE_APP_MODEL_IDS,
+  'VITE_APP_MODEL_IDS'
+);
+const endpointConfigs = parseModelConfigurations(
+  import.meta.env.VITE_APP_ENDPOINT_NAMES,
+  'VITE_APP_ENDPOINT_NAMES'
+);
+const imageModelConfigs = parseModelConfigurations(
+  import.meta.env.VITE_APP_IMAGE_MODEL_IDS,
+  'VITE_APP_IMAGE_MODEL_IDS'
+);
+const videoModelConfigs = parseModelConfigurations(
+  import.meta.env.VITE_APP_VIDEO_MODEL_IDS,
+  'VITE_APP_VIDEO_MODEL_IDS'
+);
+const speechToSpeechModelConfigs = parseModelConfigurations(
+  import.meta.env.VITE_APP_SPEECH_TO_SPEECH_MODEL_IDS,
+  'VITE_APP_SPEECH_TO_SPEECH_MODEL_IDS'
+);
+
+// Derive model ID arrays
 const bedrockModelIds: string[] = bedrockModelConfigs.map(
   (model) => model.modelId
 );
-const lightModelIds: string[] = bedrockModelConfigs
-  .filter((model) => modelMetadata[model.modelId].flags.light)
-  .map((model) => model.modelId);
+const endpointNames = endpointConfigs.map((model) => model.modelId);
+const imageGenModelIds: string[] = imageModelConfigs.map(
+  (model) => model.modelId
+);
+const videoGenModelIds: string[] = videoModelConfigs.map(
+  (model) => model.modelId
+);
+const speechToSpeechModelIds: string[] = speechToSpeechModelConfigs.map(
+  (model) => model.modelId
+);
+
+// Filter models by region and flags
 const modelIdsInModelRegion: string[] = bedrockModelConfigs
   .filter((model) => model.region === modelRegion)
   .map((model) => model.modelId);
+
+const lightModelIds: string[] = bedrockModelConfigs
+  .filter((model) => modelMetadata[model.modelId]?.flags?.light)
+  .map((model) => model.modelId);
+
+const visionModelIds: string[] = bedrockModelIds.filter(
+  (modelId) => modelMetadata[modelId]?.flags?.image
+);
+const visionEnabled: boolean = visionModelIds.length > 0;
+
+// Detect duplicate base model IDs (for CRI suffix handling)
 const duplicateBaseModelIds = new Set(
   bedrockModelIds
     .map((modelId) => modelId.replace(CRI_PREFIX_PATTERN, ''))
     .filter((item, index, arr) => arr.indexOf(item) !== index)
 );
-const visionModelIds: string[] = bedrockModelIds.filter(
-  (modelId) => modelMetadata[modelId].flags.image
+
+// Parse agents
+const agents = parseAgents(
+  import.meta.env.VITE_APP_BUILTIN_AGENTS_JSON,
+  import.meta.env.VITE_APP_CUSTOM_AGENTS_JSON
 );
-const visionEnabled: boolean = visionModelIds.length > 0;
+const agentNames: string[] = agents.map((agent) => agent.displayName);
 
-const endpointConfigs: ModelConfiguration[] = (
-  JSON.parse(import.meta.env.VITE_APP_ENDPOINT_NAMES) as ModelConfiguration[]
-)
-  .map((model) => ({
-    modelId: model.modelId.trim(),
-    region: model.region.trim(),
-  }))
-  .filter((model) => model.modelId);
-const endpointNames = endpointConfigs.map((model) => model.modelId);
+// Parse flows
+const flows = parseFlows(import.meta.env.VITE_APP_FLOWS);
 
-const imageModelConfigs = (
-  JSON.parse(import.meta.env.VITE_APP_IMAGE_MODEL_IDS) as ModelConfiguration[]
-)
-  .map(
-    (model: ModelConfiguration): ModelConfiguration => ({
-      modelId: model.modelId.trim(),
-      region: model.region.trim(),
-    })
-  )
-  .filter((model) => model.modelId);
-const imageGenModelIds: string[] = imageModelConfigs.map(
-  (model) => model.modelId
-);
+// Search agent detection
+const searchAgent = agentNames.find((name) => name.includes('Search'));
 
-const videoModelConfigs = (
-  JSON.parse(import.meta.env.VITE_APP_VIDEO_MODEL_IDS) as ModelConfiguration[]
-)
-  .map(
-    (model: ModelConfiguration): ModelConfiguration => ({
-      modelId: model.modelId.trim(),
-      region: model.region.trim(),
-    })
-  )
-  .filter((model) => model.modelId);
-const videoGenModelIds: string[] = videoModelConfigs.map(
-  (model) => model.modelId
-);
-const speechToSpeechModelConfigs = (
-  JSON.parse(
-    import.meta.env.VITE_APP_SPEECH_TO_SPEECH_MODEL_IDS
-  ) as ModelConfiguration[]
-)
-  .map(
-    (model: ModelConfiguration): ModelConfiguration => ({
-      modelId: model.modelId.trim(),
-      region: model.region.trim(),
-    })
-  )
-  .filter((model) => model.modelId);
-const speechToSpeechModelIds: string[] = speechToSpeechModelConfigs.map(
-  (model) => model.modelId
-);
+// ============== Model Object Builders ==============
 
-// Combine builtin and custom agents
-let agents: AgentInfo[] = [];
-let agentNames: string[] = [];
-
-try {
-  const builtinAgentsJson =
-    import.meta.env.VITE_APP_BUILTIN_AGENTS_JSON || '[]';
-  const customAgentsJson = import.meta.env.VITE_APP_CUSTOM_AGENTS_JSON || '[]';
-
-  const builtinAgents = JSON.parse(builtinAgentsJson) as AgentInfo[];
-  const customAgents = JSON.parse(customAgentsJson) as AgentInfo[];
-
-  agents = [...builtinAgents, ...customAgents];
-  agentNames = agents.map((agent) => agent.displayName);
-} catch (error) {
-  console.warn('Failed to parse agents JSON:', error);
-  agents = [];
-  agentNames = [];
+function buildModelFromConfig(
+  config: ModelConfiguration,
+  type: Model['type']
+): Model {
+  return {
+    modelId: config.modelId,
+    type,
+    region: config.region,
+  };
 }
 
-const getFlows = () => {
-  try {
-    return JSON.parse(import.meta.env.VITE_APP_FLOWS);
-  } catch (e) {
-    return [];
-  }
-};
-
-const flows = getFlows();
-
-// Define model objects
-export const textModels = [
-  ...bedrockModelConfigs.map(
-    (model) =>
-      ({
-        modelId: model.modelId,
-        type: 'bedrock',
-        region: model.region,
-      }) as Model
-  ),
-  ...endpointConfigs.map(
-    (model) =>
-      ({
-        modelId: model.modelId,
-        type: 'sagemaker',
-        region: model.region,
-      }) as Model
-  ),
-];
-const imageGenModels = [
-  ...imageModelConfigs.map(
-    (model) =>
-      ({
-        modelId: model.modelId,
-        type: 'bedrock',
-        region: model.region,
-      }) as Model
-  ),
-];
-const videoGenModels = [
-  ...videoModelConfigs.map(
-    (model) =>
-      ({
-        modelId: model.modelId,
-        type: 'bedrock',
-        region: model.region,
-      }) as Model
-  ),
-];
-const speechToSpeechModels = [
-  ...speechToSpeechModelConfigs.map(
-    (model) =>
-      ({
-        modelId: model.modelId,
-        type: 'bedrock',
-        region: model.region,
-      }) as Model
-  ),
-];
-const agentModels = [
-  ...agentNames.map(
-    (name) => ({ modelId: name, type: 'bedrockAgent' }) as Model
-  ),
+export const textModels: Model[] = [
+  ...bedrockModelConfigs.map((config) => buildModelFromConfig(config, 'bedrock')),
+  ...endpointConfigs.map((config) => buildModelFromConfig(config, 'sagemaker')),
 ];
 
-export const findModelByModelId = (modelId: string) => {
+const imageGenModels: Model[] = imageModelConfigs.map((config) =>
+  buildModelFromConfig(config, 'bedrock')
+);
+
+const videoGenModels: Model[] = videoModelConfigs.map((config) =>
+  buildModelFromConfig(config, 'bedrock')
+);
+
+const speechToSpeechModels: Model[] = speechToSpeechModelConfigs.map((config) =>
+  buildModelFromConfig(config, 'bedrock')
+);
+
+const agentModels: Model[] = agentNames.map(
+  (name) => ({ modelId: name, type: 'bedrockAgent' }) as Model
+);
+
+// ============== Helper Functions ==============
+
+export function findModelByModelId(modelId: string): Model {
   const model = [
     ...textModels,
     ...imageGenModels,
@@ -181,17 +196,15 @@ export const findModelByModelId = (modelId: string) => {
   ].find((m) => m.modelId === modelId);
 
   if (model) {
-    // deep copy
-    return JSON.parse(JSON.stringify(model));
+    // structuredClone replaces JSON.parse(JSON.stringify()) for deep copy
+    return structuredClone(model);
   }
 
-  return undefined;
-};
+  // Return a default model to satisfy the return type (original behavior compatibility)
+  return undefined as unknown as Model;
+}
 
-const searchAgent = agentNames.find((name) => name.includes('Search'));
-
-const modelDisplayName = (modelId: string): string => {
-  // If there are multiple instances of the same model, add CRI suffix to the display name
+function modelDisplayName(modelId: string): string {
   let displayName = modelMetadata[modelId]?.displayName ?? modelId;
   if (duplicateBaseModelIds.has(modelId.replace(CRI_PREFIX_PATTERN, ''))) {
     const criMatch = modelId.match(CRI_PREFIX_PATTERN);
@@ -200,9 +213,9 @@ const modelDisplayName = (modelId: string): string => {
     }
   }
   return displayName;
-};
+}
 
-const getModelMetadata = (modelId: string) => {
+function getModelMetadata(modelId: string) {
   const model = modelMetadata[modelId];
   if (!model) {
     return {
@@ -211,10 +224,12 @@ const getModelMetadata = (modelId: string) => {
     };
   }
   return model;
-};
+}
+
+// ============== Exported Constants ==============
 
 export const MODELS = {
-  modelRegion: modelRegion,
+  modelRegion,
   modelIds: bedrockModelIds,
   allModelIds: [...bedrockModelIds, ...endpointNames],
   modelIdsInModelRegion,
@@ -222,20 +237,20 @@ export const MODELS = {
   getModelMetadata,
   modelDisplayName,
   lightModelIds,
-  visionModelIds: visionModelIds,
-  visionEnabled: visionEnabled,
-  imageGenModelIds: imageGenModelIds,
-  videoGenModelIds: videoGenModelIds,
-  agentNames: agentNames,
-  agents: agents,
-  textModels: textModels,
-  imageGenModels: imageGenModels,
-  videoGenModels: videoGenModels,
-  agentModels: agentModels,
+  visionModelIds,
+  visionEnabled,
+  imageGenModelIds,
+  videoGenModelIds,
+  agentNames,
+  agents,
+  textModels,
+  imageGenModels,
+  videoGenModels,
+  agentModels,
   agentEnabled: agentNames.length > 0,
-  searchAgent: searchAgent,
+  searchAgent,
   flows,
   flowChatEnabled: flows.length > 0,
-  speechToSpeechModelIds: speechToSpeechModelIds,
-  speechToSpeechModels: speechToSpeechModels,
+  speechToSpeechModelIds,
+  speechToSpeechModels,
 };
