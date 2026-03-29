@@ -3,6 +3,8 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import useSWR, { SWRConfiguration } from 'swr';
 import useSWRInfinite from 'swr/infinite';
 
+/* eslint-disable react-hooks/rules-of-hooks */
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_APP_API_ENDPOINT,
 });
@@ -20,8 +22,35 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-const fetcher = (url: string) => {
-  return api.get(url).then((res) => res.data);
+const fetcher = async (url: string) => {
+  return (await api.get(url)).data;
+};
+
+type ErrorProcess = (err: unknown) => void;
+
+const processHttpError = (errorProcess?: ErrorProcess) => (err: unknown) => {
+  if (errorProcess) {
+    errorProcess(err);
+  }
+
+  throw err;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const useGet = <Data = any, Error = any>(
+  url: string | null,
+  config?: SWRConfiguration
+) => {
+  return useSWR<Data, Error>(url, fetcher, config);
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const useGetPagination = <Data = any, Error = any>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getKey: (pageIndex: number, previousPageData: any) => string | null,
+  config?: SWRConfiguration
+) => {
+  return useSWRInfinite<Data, Error>(getKey, fetcher, config);
 };
 
 /**
@@ -37,24 +66,9 @@ const useHttp = () => {
      * @param url
      * @returns
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    get: <Data = any, Error = any>(
-      url: string | null,
-      config?: SWRConfiguration
-    ) => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      return useSWR<Data, Error>(url, fetcher, config);
-    },
+    get: useGet,
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getPagination: <Data = any, Error = any>(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      getKey: (pageIndex: number, previousPageData: any) => string | null,
-      config?: SWRConfiguration
-    ) => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      return useSWRInfinite<Data, Error>(getKey, fetcher, config);
-    },
+    getPagination: useGetPagination,
 
     /**
      * POST Request
@@ -67,17 +81,11 @@ const useHttp = () => {
       url: string,
       data: DATA,
       reqConfig?: AxiosRequestConfig,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      errorProcess?: (err: any) => void
+      errorProcess?: ErrorProcess
     ): Promise<AxiosResponse<RES>> => {
       return api
         .post<RES, AxiosResponse<RES>, DATA>(url, data, reqConfig)
-        .catch((err) => {
-          if (errorProcess) {
-            errorProcess(err);
-          }
-          throw err;
-        });
+        .catch(processHttpError(errorProcess));
     },
 
     /**
@@ -90,15 +98,11 @@ const useHttp = () => {
     put: <RES = any, DATA = any>(
       url: string,
       data: DATA,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      errorProcess?: (err: any) => void
+      errorProcess?: ErrorProcess
     ): Promise<AxiosResponse<RES>> => {
-      return api.put<RES, AxiosResponse<RES>, DATA>(url, data).catch((err) => {
-        if (errorProcess) {
-          errorProcess(err);
-        }
-        throw err;
-      });
+      return api
+        .put<RES, AxiosResponse<RES>, DATA>(url, data)
+        .catch(processHttpError(errorProcess));
     },
     /**
      * DELETE Request
@@ -108,15 +112,11 @@ const useHttp = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete: <RES = any, DATA = any>(
       url: string,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      errorProcess?: (err: any) => void
+      errorProcess?: ErrorProcess
     ): Promise<AxiosResponse<RES>> => {
-      return api.delete<RES, AxiosResponse<RES>, DATA>(url).catch((err) => {
-        if (errorProcess) {
-          errorProcess(err);
-        }
-        throw err;
-      });
+      return api
+        .delete<RES, AxiosResponse<RES>, DATA>(url)
+        .catch(processHttpError(errorProcess));
     },
   };
 };

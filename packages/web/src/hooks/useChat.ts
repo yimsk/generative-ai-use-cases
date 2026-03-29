@@ -225,7 +225,12 @@ const useChatState = create<{
 
     // If the title is an empty string, predict the title and set it
     const modelId = getModelId(id);
-    const model = findModelByModelId(modelId)!;
+    const model = findModelByModelId(modelId);
+
+    if (!model) {
+      throw new Error(`Model not found for ID: ${modelId}`);
+    }
+
     const prompter = getPrompter(modelId);
     const title = await predictTitle({
       model,

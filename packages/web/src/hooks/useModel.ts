@@ -1,4 +1,9 @@
-import { Model, ModelConfiguration, AgentInfo, Flow } from 'generative-ai-use-cases';
+import {
+  Model,
+  ModelConfiguration,
+  AgentInfo,
+  Flow,
+} from 'generative-ai-use-cases';
 import {
   CRI_PREFIX_PATTERN,
   modelMetadata,
@@ -39,20 +44,23 @@ function parseAgents(
   builtinJson: string | undefined,
   customJson: string | undefined
 ): AgentInfo[] {
-  const parseAgentJson = (json: string | undefined, source: string): AgentInfo[] => {
+  const parseAgentJson = (
+    json: string | undefined,
+    source: string
+  ): AgentInfo[] => {
     if (!json || json.trim() === '') {
       return [];
     }
     try {
       const parsed = JSON.parse(json) as AgentInfo[];
       if (!Array.isArray(parsed)) {
-        console.warn(`${source} is not an array, using empty array`);
-        return [];
+        throw new Error(`${source} must be a JSON array`);
       }
       return parsed;
     } catch (error) {
-      console.warn(`Failed to parse ${source}:`, error);
-      return [];
+      throw new Error(
+        `Invalid ${source}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   };
 
@@ -68,11 +76,13 @@ function parseFlows(envValue: string | undefined): Flow[] {
   try {
     const parsed = JSON.parse(envValue) as Flow[];
     if (!Array.isArray(parsed)) {
-      return [];
+      throw new Error('VITE_APP_FLOWS must be a JSON array');
     }
     return parsed;
-  } catch {
-    return [];
+  } catch (error) {
+    throw new Error(
+      `Invalid VITE_APP_FLOWS: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -165,7 +175,9 @@ function buildModelFromConfig(
 }
 
 export const textModels: Model[] = [
-  ...bedrockModelConfigs.map((config) => buildModelFromConfig(config, 'bedrock')),
+  ...bedrockModelConfigs.map((config) =>
+    buildModelFromConfig(config, 'bedrock')
+  ),
   ...endpointConfigs.map((config) => buildModelFromConfig(config, 'sagemaker')),
 ];
 
@@ -187,7 +199,7 @@ const agentModels: Model[] = agentNames.map(
 
 // ============== Helper Functions ==============
 
-export function findModelByModelId(modelId: string): Model {
+export function findModelByModelId(modelId: string): Model | undefined {
   const model = [
     ...textModels,
     ...imageGenModels,
@@ -200,8 +212,7 @@ export function findModelByModelId(modelId: string): Model {
     return structuredClone(model);
   }
 
-  // Return a default model to satisfy the return type (original behavior compatibility)
-  return undefined as unknown as Model;
+  return undefined;
 }
 
 function modelDisplayName(modelId: string): string {

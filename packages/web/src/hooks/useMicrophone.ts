@@ -51,15 +51,23 @@ const useMicrophone = () => {
     if (transcribeClient) return;
 
     let cancelled = false;
+    let client: TranscribeStreamingClient | undefined;
+    let handedOff = false;
 
     const setupClient = async () => {
       try {
-        const transcribe = await createTranscribeClient();
-        if (!transcribe || cancelled) {
+        client = await createTranscribeClient();
+        if (!client) {
           return;
         }
 
-        setTranscribeClient(transcribe);
+        if (cancelled) {
+          client.destroy();
+          return;
+        }
+
+        handedOff = true;
+        setTranscribeClient(client);
         setError(null);
       } catch (clientError) {
         if (!cancelled) {
@@ -76,6 +84,9 @@ const useMicrophone = () => {
 
     return () => {
       cancelled = true;
+      if (!handedOff) {
+        client?.destroy();
+      }
     };
   }, [transcribeClient]);
 

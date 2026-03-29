@@ -18,6 +18,8 @@ import { UnrecordedMessage } from 'generative-ai-use-cases';
 import { McpPageQueryParams } from '../@types/navigate';
 import queryString from 'query-string';
 
+/* eslint-disable react-hooks/exhaustive-deps */
+
 type StateType = {
   content: string;
   inputSystemContext: string;
@@ -58,7 +60,7 @@ const McpChatPage: React.FC = () => {
     isEmpty,
     clear,
   } = useMcp();
-  const { pathname, search } = useLocation();
+  const { search } = useLocation();
   const { modelIds: availableModels, modelDisplayName } = MODELS;
   const { scrollableContainer, setFollowing } = useFollow();
   const modelId = useMemo(() => {
@@ -70,7 +72,7 @@ const McpChatPage: React.FC = () => {
   const [showSystemContext, setShowSystemContext] = useState(false);
 
   useEffect(() => {
-    const _modelId = !modelId ? availableModels[0] : modelId;
+    const _modelId = !modelId ? MODELS.modelIds[0] : modelId;
 
     if (search !== '') {
       const params = queryString.parse(search) as McpPageQueryParams;
@@ -82,15 +84,23 @@ const McpChatPage: React.FC = () => {
       }
       setContent(params.content ?? '');
       setModelId(
-        availableModels.includes(params.modelId ?? '')
+        MODELS.modelIds.includes(params.modelId ?? '')
           ? params.modelId!
           : _modelId
       );
     } else {
       setModelId(_modelId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, setContent, availableModels, pathname]);
+  }, [
+    search,
+    setContent,
+    modelId,
+    updateSystemContext,
+    clear,
+    setInputSystemContext,
+    currentSystemContext,
+    setModelId,
+  ]);
 
   useEffect(() => {
     setInputSystemContext(currentSystemContext);
@@ -99,13 +109,18 @@ const McpChatPage: React.FC = () => {
   const onSend = useCallback(() => {
     setFollowing(true);
 
-    const model = findModelByModelId(modelId);
+    const selectedModel = findModelByModelId(modelId);
+
+    if (!selectedModel) {
+      console.error(`model not found for ${modelId}`);
+      return;
+    }
 
     postMessage({
       systemPrompt: currentSystemContext,
       userPrompt: content,
       messages: messages as UnrecordedMessage[],
-      model,
+      model: selectedModel!,
     });
     setContent('');
   }, [

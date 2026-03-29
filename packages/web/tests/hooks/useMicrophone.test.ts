@@ -81,6 +81,17 @@ const createTranscriptStream = (events: unknown[]) => ({
   },
 });
 
+const createDeferred = <T>() => {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { promise, resolve, reject };
+};
+
 describe('useMicrophone', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -266,5 +277,26 @@ describe('useMicrophone', () => {
     unmount();
 
     expect(client.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it('destroys a late transcribe client init after unmount', async () => {
+    const deferred = createDeferred<{
+      tokens?: { idToken?: { toString: () => string } };
+    }>();
+    mocks.fetchAuthSession.mockReturnValueOnce(deferred.promise);
+
+    const { unmount } = renderHook(() => useMicrophone());
+
+    unmount();
+
+    await act(async () => {
+      deferred.resolve({
+        tokens: { idToken: { toString: () => 'token-123' } },
+      });
+      await deferred.promise;
+    });
+
+    expect(mocks.clientInstances).toHaveLength(1);
+    expect(mocks.clientInstances[0].destroy).toHaveBeenCalledTimes(1);
   });
 });

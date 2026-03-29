@@ -25,59 +25,75 @@ vi.mock('@generative-ai-use-cases/common', () => ({
 }));
 
 describe('useModel exports', () => {
-  const originalEnv: Record<string, string> = {};
+  const baseEnv = {
+    VITE_APP_MODEL_REGION: 'us-east-1',
+    VITE_APP_MODEL_IDS: JSON.stringify([
+      {
+        modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
+        region: 'us-east-1',
+      },
+      {
+        modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
+        region: 'us-west-2',
+      },
+      { modelId: 'custom-model-cri-abc123', region: 'us-east-1' },
+      { modelId: 'custom-model-cri-def456', region: 'us-west-2' },
+    ]),
+    VITE_APP_ENDPOINT_NAMES: JSON.stringify([
+      { modelId: 'sagemaker-model-1', region: 'us-east-1' },
+    ]),
+    VITE_APP_IMAGE_MODEL_IDS: JSON.stringify([
+      { modelId: 'amazon.titan-image-generator-v1:0', region: 'us-east-1' },
+    ]),
+    VITE_APP_VIDEO_MODEL_IDS: JSON.stringify([
+      { modelId: 'amazon.nova-reel-v1:0', region: 'us-east-1' },
+    ]),
+    VITE_APP_SPEECH_TO_SPEECH_MODEL_IDS: JSON.stringify([
+      { modelId: 'amazon.nova-sonic-v1:0', region: 'us-east-1' },
+    ]),
+    VITE_APP_BUILTIN_AGENTS_JSON: JSON.stringify([
+      { displayName: 'Search Agent', description: 'Search the web' },
+    ]),
+    VITE_APP_CUSTOM_AGENTS_JSON: JSON.stringify([
+      { displayName: 'Custom Agent', description: 'Custom tool' },
+    ]),
+    VITE_APP_FLOWS: JSON.stringify([
+      {
+        flowId: 'flow-1',
+        aliasId: 'alias-1',
+        flowName: 'Test Flow',
+        description: 'Test',
+      },
+    ]),
+  };
+
+  const setEnv = (overrides: Record<string, string> = {}) => {
+    vi.unstubAllEnvs();
+    Object.entries(baseEnv).forEach(([key, value]) => {
+      vi.stubEnv(key, value);
+    });
+    Object.entries(overrides).forEach(([key, value]) => {
+      vi.stubEnv(key, value);
+    });
+  };
+
+  const importUseModelWithEnv = async (overrides: Record<string, string>) => {
+    vi.resetModules();
+    setEnv(overrides);
+
+    try {
+      return await import('../../src/hooks/useModel');
+    } finally {
+      setEnv();
+    }
+  };
 
   beforeAll(() => {
-    Object.assign(originalEnv, import.meta.env);
-
-    Object.assign(import.meta.env, {
-      VITE_APP_MODEL_REGION: 'us-east-1',
-      VITE_APP_MODEL_IDS: JSON.stringify([
-        {
-          modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
-          region: 'us-east-1',
-        },
-        {
-          modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
-          region: 'us-west-2',
-        },
-        { modelId: 'custom-model-cri-abc123', region: 'us-east-1' },
-        { modelId: 'custom-model-cri-def456', region: 'us-west-2' },
-      ]),
-      VITE_APP_ENDPOINT_NAMES: JSON.stringify([
-        { modelId: 'sagemaker-model-1', region: 'us-east-1' },
-      ]),
-      VITE_APP_IMAGE_MODEL_IDS: JSON.stringify([
-        { modelId: 'amazon.titan-image-generator-v1:0', region: 'us-east-1' },
-      ]),
-      VITE_APP_VIDEO_MODEL_IDS: JSON.stringify([
-        { modelId: 'amazon.nova-reel-v1:0', region: 'us-east-1' },
-      ]),
-      VITE_APP_SPEECH_TO_SPEECH_MODEL_IDS: JSON.stringify([
-        { modelId: 'amazon.nova-sonic-v1:0', region: 'us-east-1' },
-      ]),
-      VITE_APP_BUILTIN_AGENTS_JSON: JSON.stringify([
-        { displayName: 'Search Agent', description: 'Search the web' },
-      ]),
-      VITE_APP_CUSTOM_AGENTS_JSON: JSON.stringify([
-        { displayName: 'Custom Agent', description: 'Custom tool' },
-      ]),
-      VITE_APP_FLOWS: JSON.stringify([
-        {
-          flowId: 'flow-1',
-          aliasId: 'alias-1',
-          flowName: 'Test Flow',
-          description: 'Test',
-        },
-      ]),
-    });
+    setEnv();
   });
 
   afterAll(() => {
-    Object.keys(import.meta.env).forEach((key) => {
-      delete (import.meta.env as Record<string, unknown>)[key];
-    });
-    Object.assign(import.meta.env, originalEnv);
+    vi.unstubAllEnvs();
   });
 
   describe('MODELS export', () => {
@@ -350,6 +366,24 @@ describe('useModel exports', () => {
       const model = findModelByModelId('nonexistent-model');
 
       expect(model).toBeUndefined();
+    });
+  });
+
+  describe('config parsing failures', () => {
+    it('should fail fast for invalid agent JSON', async () => {
+      await expect(
+        importUseModelWithEnv({
+          VITE_APP_BUILTIN_AGENTS_JSON: '{invalid-json',
+        })
+      ).rejects.toThrow(/Invalid builtin agents/);
+    });
+
+    it('should fail fast for invalid flows JSON', async () => {
+      await expect(
+        importUseModelWithEnv({
+          VITE_APP_FLOWS: '{invalid-json',
+        })
+      ).rejects.toThrow(/Invalid VITE_APP_FLOWS/);
     });
   });
 });
