@@ -502,4 +502,58 @@ describe('EChartsRenderer', () => {
       expect(echarts.init).toHaveBeenCalledWith(expect.any(HTMLDivElement));
     });
   });
+
+  describe('onChartInit callback', () => {
+    it('calls onChartInit with instance after initialization', async () => {
+      const onChartInit = vi.fn();
+
+      render(
+        <EChartsRenderer
+          rawJson={JSON.stringify(singleSeriesData)}
+          onChartInit={onChartInit}
+        />
+      );
+
+      await waitFor(() => {
+        expect(onChartInit).toHaveBeenCalledTimes(1);
+        expect(onChartInit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            setOption: expect.any(Function),
+            resize: expect.any(Function),
+            dispose: expect.any(Function),
+          })
+        );
+      });
+    });
+
+    it('calls onChartInit with null on unmount', async () => {
+      const onChartInit = vi.fn();
+
+      const { unmount } = render(
+        <EChartsRenderer
+          rawJson={JSON.stringify(singleSeriesData)}
+          onChartInit={onChartInit}
+        />
+      );
+
+      await waitFor(() => {
+        expect(onChartInit).toHaveBeenCalledTimes(1);
+      });
+
+      unmount();
+
+      expect(onChartInit).toHaveBeenCalledWith(null);
+      expect(onChartInit).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not call onChartInit when not provided', async () => {
+      render(<EChartsRenderer rawJson={JSON.stringify(singleSeriesData)} />);
+
+      await waitFor(() => {
+        expect(mockInit).toHaveBeenCalledTimes(1);
+      });
+
+      expect(mockInit).toHaveBeenCalled();
+    });
+  });
 });
