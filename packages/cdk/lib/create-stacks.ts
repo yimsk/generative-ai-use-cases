@@ -25,46 +25,16 @@ class DeletionPolicySetter implements cdk.IAspect {
   }
 }
 
-// Merges inference profile ARNs into ModelIds and returns a new array using RemoteOutputs
-const mergeModelIdsAndInferenceProfileArn = (
-  modelIds: ProcessedStackInput['modelIds'],
-  inferenceProfileStacks: Record<string, ApplicationInferenceProfileStack>,
-  scope: cdk.App
-) => {
-  return modelIds.map((modelId) => {
-    const result = { ...modelId };
-    const stack = inferenceProfileStacks[modelId.region];
-    if (stack) {
-      try {
-        const remoteOutputs = new RemoteOutputs(
-          scope,
-          `InferenceProfile-${modelId.region}-RemoteOutputs`,
-          {
-            stack: stack,
-            alwaysUpdate: true,
-          }
-        );
-        const inferenceProfileArnsJson = remoteOutputs.get(
-          REMOTE_OUTPUT_KEYS.INFERENCE_PROFILE_ARNS
-        );
-        if (inferenceProfileArnsJson) {
-          const inferenceProfileArns = JSON.parse(inferenceProfileArnsJson);
-          const inferenceProfileArn = inferenceProfileArns[modelId.modelId];
-          if (inferenceProfileArn) {
-            result.inferenceProfileArn = inferenceProfileArn;
-          }
-        }
-      } catch (e) {
-        // Stack doesn't exist or output not found, continue without inference profile
-      }
-    }
-    return result;
-  });
-};
-
-export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
-  // Create an ApplicationInferenceProfile for each region of the model to be used
-  const modelRegions = [
+export const collectUniqueRegions = (
+  params: Pick<
+    ProcessedStackInput,
+    | 'modelIds'
+    | 'imageGenerationModelIds'
+    | 'videoGenerationModelIds'
+    | 'speechToSpeechModelIds'
+  >
+): string[] => {
+  return [
     ...new Set([
       ...params.modelIds.map((model) => model.region),
       ...params.imageGenerationModelIds.map((model) => model.region),
@@ -72,50 +42,137 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
       ...params.speechToSpeechModelIds.map((model) => model.region),
     ]),
   ];
+};
+
+export const mergeInferenceProfileArns = (
+  modelIds: ProcessedStackInput['modelIds'],
+  inferenceProfileStacks: Record<string, ApplicationInferenceProfileStack>,
+  scope: cdk.App
+): ProcessedStackInput['modelIds'] => {
+  return modelIds.map((modelId) => {
+    const result = { ...modelId };
+    const stack = inferenceProfileStacks[modelId.region];
+    if (!stack) {
+      return result;
+    }
+
+    try {
+      const remoteOutputs = new RemoteOutputs(
+        scope,
+        `InferenceProfile-${modelId.region}-RemoteOutputs`,
+        {
+          stack: stack,
+          alwaysUpdate: true,
+        }
+      );
+      const inferenceProfileArnsJson = remoteOutputs.get(
+        REMOTE_OUTPUT_KEYS.INFERENCE_PROFILE_ARNS
+      );
+      if (inferenceProfileArnsJson) {
+        const inferenceProfileArns = JSON.parse(inferenceProfileArnsJson);
+        const inferenceProfileArn = inferenceProfileArns[modelId.modelId];
+        if (inferenceProfileArn) {
+          result.inferenceProfileArn = inferenceProfileArn;
+        }
+      }
+    } catch (e) {
+      console.debug(
+        `Inference profile lookup failed for region ${modelId.region}: ${e instanceof Error ? e.message : String(e)}. Continuing without inference profile.`
+      );
+    }
+    return result;
+  });
+};
+
+const createInferenceProfileStacks = (
+  app: cdk.App,
+  params: ProcessedStackInput,
+  modelRegions: string[]
+): Record<string, ApplicationInferenceProfileStack> => {
   const inferenceProfileStacks: Record<
     string,
     ApplicationInferenceProfileStack
   > = {};
   for (const region of modelRegions) {
-    const applicationInferenceProfileStack =
-      new ApplicationInferenceProfileStack(
-        app,
-        `ApplicationInferenceProfileStack${params.env}${region}`,
-        {
-          env: {
-            account: params.account,
-            region,
-          },
-          params,
-        }
-      );
-    inferenceProfileStacks[region] = applicationInferenceProfileStack;
+    inferenceProfileStacks[region] = new ApplicationInferenceProfileStack(
+      app,
+      `ApplicationInferenceProfileStack${params.env}${region}`,
+      {
+        env: {
+          account: params.account,
+          region,
+        },
+        params,
+      }
+    );
   }
+  return inferenceProfileStacks;
+};
 
-  // Set inference profile ARNs to model IDs
+const preprocessParams = (
+  app: cdk.App,
+  params: ProcessedStackInput,
+  inferenceProfileStacks: Record<string, ApplicationInferenceProfileStack>
+): ProcessedStackInput => {
   const updatedParams: ProcessedStackInput = JSON.parse(JSON.stringify(params));
-  updatedParams.modelIds = mergeModelIdsAndInferenceProfileArn(
+  updatedParams.modelIds = mergeInferenceProfileArns(
     params.modelIds,
     inferenceProfileStacks,
     app
   );
-  updatedParams.imageGenerationModelIds = mergeModelIdsAndInferenceProfileArn(
+  updatedParams.imageGenerationModelIds = mergeInferenceProfileArns(
     params.imageGenerationModelIds,
     inferenceProfileStacks,
     app
   );
-  updatedParams.videoGenerationModelIds = mergeModelIdsAndInferenceProfileArn(
+  updatedParams.videoGenerationModelIds = mergeInferenceProfileArns(
     params.videoGenerationModelIds,
     inferenceProfileStacks,
     app
   );
-  updatedParams.speechToSpeechModelIds = mergeModelIdsAndInferenceProfileArn(
+  updatedParams.speechToSpeechModelIds = mergeInferenceProfileArns(
     params.speechToSpeechModelIds,
     inferenceProfileStacks,
     app
   );
+  return updatedParams;
+};
 
-  // GenU Stack
+const createRegionScopedResources = (
+  app: cdk.App,
+  params: ProcessedStackInput
+): Record<string, string> => {
+  const videoModelRegions = [
+    ...new Set(
+      params.videoGenerationModelIds.map((model) => model.region)
+    ),
+  ];
+  const videoBucketRegionMap: Record<string, string> = {};
+
+  for (const region of videoModelRegions) {
+    const videoTmpBucketStack = new VideoTmpBucketStack(
+      app,
+      `VideoTmpBucketStack${params.env}${region}`,
+      {
+        env: {
+          account: params.account,
+          region,
+        },
+        params,
+      }
+    );
+    videoBucketRegionMap[region] = videoTmpBucketStack.bucketName;
+  }
+
+  return videoBucketRegionMap;
+};
+
+const createFeatureStacks = (
+  app: cdk.App,
+  params: ProcessedStackInput,
+  updatedParams: ProcessedStackInput,
+  videoBucketRegionMap: Record<string, string>
+) => {
   const isSageMakerStudio = 'SAGEMAKER_APP_TYPE_LOWERCASE' in process.env;
 
   let closedNetworkStack: ClosedNetworkStack | undefined = undefined;
@@ -135,9 +192,6 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
     );
   }
 
-  // CloudFront WAF
-  // Only deploy CloudFrontWafStack if IP address range (v4 or v6) or geographic restriction is defined
-  // WAF v2 is only deployable in us-east-1, so the Stack is separated
   const cloudFrontWafStack =
     (params.allowedIpV4AddressRanges ||
       params.allowedIpV6AddressRanges ||
@@ -154,7 +208,6 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
         })
       : null;
 
-  // RAG Knowledge Base
   const ragKnowledgeBaseStack =
     updatedParams.ragKnowledgeBaseEnabled && !updatedParams.ragKnowledgeBaseId
       ? new RagKnowledgeBaseStack(
@@ -171,7 +224,6 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
         )
       : null;
 
-  // Agent
   if (updatedParams.crossAccountBedrockRoleArn) {
     if (updatedParams.agentEnabled || updatedParams.searchApiKey) {
       throw new Error(
@@ -190,7 +242,6 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
       })
     : null;
 
-  // Guardrail
   const guardrailStack = updatedParams.guardrailEnabled
     ? new GuardrailStack(app, `GuardrailStack${updatedParams.env}`, {
         env: {
@@ -201,7 +252,6 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
       })
     : null;
 
-  // Agent Core Runtime (always create if either feature is enabled)
   const agentCoreStack =
     params.createGenericAgentCoreRuntime || params.agentBuilderEnabled
       ? new AgentCoreStack(app, `AgentCoreStack${params.env}`, {
@@ -213,7 +263,6 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
         })
       : null;
 
-  // Research Agent Core Runtime
   const researchAgentCoreStack = params.researchAgentEnabled
     ? new ResearchAgentCoreStack(app, `ResearchAgentCoreStack${params.env}`, {
         env: {
@@ -223,31 +272,6 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
         params: params,
       })
     : null;
-
-  // Create S3 Bucket for each unique region for StartAsyncInvoke in video generation
-  // because the S3 Bucket must be in the same region as Bedrock Runtime
-  const videoModelRegions = [
-    ...new Set(
-      updatedParams.videoGenerationModelIds.map((model) => model.region)
-    ),
-  ];
-  const videoBucketRegionMap: Record<string, string> = {};
-
-  for (const region of videoModelRegions) {
-    const videoTmpBucketStack = new VideoTmpBucketStack(
-      app,
-      `VideoTmpBucketStack${updatedParams.env}${region}`,
-      {
-        env: {
-          account: updatedParams.account,
-          region,
-        },
-        params: updatedParams,
-      }
-    );
-
-    videoBucketRegionMap[region] = videoTmpBucketStack.bucketName;
-  }
 
   const generativeAiUseCasesStack = new GenerativeAiUseCasesStack(
     app,
@@ -262,38 +286,27 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
         : undefined,
       params: updatedParams,
       crossRegionReferences: true,
-      // RAG Knowledge Base
       knowledgeBaseId: ragKnowledgeBaseStack?.knowledgeBaseId,
       knowledgeBaseDataSourceBucketName:
         ragKnowledgeBaseStack?.dataSourceBucketName,
       agentStack: agentStack || undefined,
-
-      // Agent Core
       createGenericAgentCoreRuntime: params.createGenericAgentCoreRuntime,
       agentBuilderEnabled: params.agentBuilderEnabled,
       agentCoreStack: agentCoreStack || undefined,
-      // Research Agent Core
       researchAgentEnabled: params.researchAgentEnabled,
       researchAgentCoreStack: researchAgentCoreStack || undefined,
-      // Video Generation
       videoBucketRegionMap,
-      // Guardrail
       guardrailIdentifier: guardrailStack?.guardrailIdentifier,
       guardrailVersion: 'DRAFT',
-      // WAF
       webAclId: cloudFrontWafStack?.webAclArn,
-      // Custom Domain
       cert: cloudFrontWafStack?.cert,
-      // Image build environment
       isSageMakerStudio,
-      // Closed network
       vpc: closedNetworkStack?.vpc,
       apiGatewayVpcEndpoint: closedNetworkStack?.apiGatewayVpcEndpoint,
       webBucket: closedNetworkStack?.webBucket,
     }
   );
 
-  // Add explicit dependencies for RemoteOutputs
   if (agentStack) {
     generativeAiUseCasesStack.addDependency(agentStack);
   }
@@ -330,7 +343,24 @@ export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
     agentStack,
     guardrailStack,
     agentCoreStack,
+    researchAgentCoreStack,
     generativeAiUseCasesStack,
     dashboardStack,
   };
+};
+
+export const createStacks = (app: cdk.App, params: ProcessedStackInput) => {
+  const modelRegions = collectUniqueRegions(params);
+
+  const inferenceProfileStacks = createInferenceProfileStacks(
+    app,
+    params,
+    modelRegions
+  );
+
+  const updatedParams = preprocessParams(app, params, inferenceProfileStacks);
+
+  const videoBucketRegionMap = createRegionScopedResources(app, updatedParams);
+
+  return createFeatureStacks(app, params, updatedParams, videoBucketRegionMap);
 };
