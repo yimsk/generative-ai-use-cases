@@ -122,6 +122,7 @@ auth:
 chart:
   download_svg: SVGをダウンロード
   invalid_data: 無効なチャートデータ
+  loading: チャートデータを読み込み中...
   view_chart: チャートを表示
   view_code: コードを表示
 chat:

@@ -131,6 +131,7 @@ auth:
 chart:
   download_svg: Download SVG
   invalid_data: Invalid chart data
+  loading: Loading chart data...
   view_chart: View Chart
   view_code: View Code
 chat:

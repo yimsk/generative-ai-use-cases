@@ -9,6 +9,7 @@ import type * as echarts from 'echarts';
 import ButtonCopy from '../ButtonCopy';
 import Button from '../Button';
 import EChartsRenderer from './EChartsRenderer';
+import { isValidChartData } from './validation';
 
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -19,10 +20,9 @@ interface ChartWithToggleProps {
 
 export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState<'chart' | 'code'>('chart');
+  const [manualViewMode, setManualViewMode] = useState<'chart' | 'code' | null>(null);
   const [zoom, setZoom] = useState(false);
   const prevCodeRef = useRef(code);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mainChartRef = useRef<echarts.ECharts | null>(null);
@@ -59,22 +59,21 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
   useEffect(() => {
     if (code !== prevCodeRef.current) {
       prevCodeRef.current = code;
-
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-
-      timerRef.current = setTimeout(() => {
-        setViewMode('chart');
-      }, 500);
+      setManualViewMode(null);
     }
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
   }, [code]);
+
+  const getEffectiveViewMode = (): 'chart' | 'code' => {
+    if (manualViewMode !== null) return manualViewMode;
+    if (!code.trim()) return 'code';
+    try {
+      const parsed = JSON.parse(code);
+      return isValidChartData(parsed) ? 'chart' : 'code';
+    } catch {
+      return 'code';
+    }
+  };
+  const viewMode = getEffectiveViewMode();
 
   useEffect(() => {
     if (viewMode === 'chart' || zoom) {
@@ -129,7 +128,7 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
                 type="button"
                 className={`m-0.5 flex items-center rounded px-2 py-1 transition-colors
                 ${viewMode === 'chart' ? 'bg-gray-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-                onClick={() => setViewMode('chart')}>
+                onClick={() => setManualViewMode('chart')}>
                 <LuChartBar className="mr-1 text-sm" />
                 {t('chart.view_chart')}
               </button>
@@ -137,7 +136,7 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
                 type="button"
                 className={`m-0.5 flex items-center rounded px-2 py-1 transition-colors
                 ${viewMode === 'code' ? 'bg-gray-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-                onClick={() => setViewMode('code')}>
+                onClick={() => setManualViewMode('code')}>
                 <VscCode className="mr-1 text-sm" />
                 {t('chart.view_code')}
               </button>
@@ -185,6 +184,11 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
                 ? 'visible opacity-100'
                 : 'invisible absolute left-0 top-0 h-0 opacity-0'
             }`}>
+            {manualViewMode === null && code.trim() === '' && (
+              <div className="flex h-24 items-center justify-center text-gray-400 text-sm">
+                {t('chart.loading')}
+              </div>
+            )}
             <SyntaxHighlighter
               style={vscDarkPlus}
               language="json"
