@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as echarts from 'echarts';
 import EChartsRenderer from '../../../src/components/Chart/EChartsRenderer';
 
@@ -8,6 +8,7 @@ const municipalityName = 'Shinjuku';
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch as typeof fetch;
+let getBoundingClientRectSpy: ReturnType<typeof vi.spyOn>;
 
 const {
   mockSetOption,
@@ -121,6 +122,22 @@ const candlestickData = {
 
 describe('EChartsRenderer', () => {
   beforeEach(() => {
+    getBoundingClientRectSpy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(
+        () =>
+          ({
+            width: 640,
+            height: 300,
+            top: 0,
+            right: 640,
+            bottom: 300,
+            left: 0,
+            x: 0,
+            y: 0,
+            toJSON: () => ({}),
+          }) as DOMRect
+      );
     mockInit.mockClear();
     mockSetOption.mockClear();
     mockResize.mockClear();
@@ -128,6 +145,10 @@ describe('EChartsRenderer', () => {
     mockGetDataURL.mockClear();
     mockRegisterMap.mockClear();
     mockFetch.mockReset();
+  });
+
+  afterEach(() => {
+    getBoundingClientRectSpy.mockRestore();
   });
 
   it('renders bar chart with valid single-series JSON', async () => {

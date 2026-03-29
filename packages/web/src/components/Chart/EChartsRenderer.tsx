@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import * as echarts from 'echarts';
 import { useGeoJSON } from '../../hooks/useGeoJSON';
@@ -296,6 +302,15 @@ function buildCandlestickOption(
   };
 }
 
+type TooltipOption = Exclude<
+  NonNullable<echarts.EChartsOption['tooltip']>,
+  echarts.EChartsOption['tooltip'][]
+>;
+type TooltipFormatter = Exclude<TooltipOption['formatter'], string | undefined>;
+type MapTooltipFormatterParam =
+  | { name?: string; value?: unknown }
+  | Array<{ name?: string; value?: unknown }>;
+
 function buildMapOption(mapData: MapInput): echarts.EChartsOption {
   const values = mapData.data.map((datum) => datum.value);
   const minValue = Math.min(...values);
@@ -304,17 +319,16 @@ function buildMapOption(mapData: MapInput): echarts.EChartsOption {
   return {
     tooltip: {
       trigger: 'item',
-      formatter: (params) => {
-        const rawValue = Array.isArray(params)
-          ? params[0]?.value
-          : params.value;
+      formatter: ((params: MapTooltipFormatterParam) => {
+        const target = Array.isArray(params) ? params[0] : params;
+        const rawValue = target?.value;
         const value =
           typeof rawValue === 'number' || typeof rawValue === 'string'
             ? rawValue.toLocaleString()
             : 'N/A';
 
-        return `${params.name}: ${value}`;
-      },
+        return `${target?.name ?? 'N/A'}: ${value}`;
+      }) as TooltipFormatter,
     },
     visualMap: {
       min: minValue,
@@ -331,6 +345,9 @@ function buildMapOption(mapData: MapInput): echarts.EChartsOption {
         type: 'map',
         map: mapData.region,
         data: mapData.data,
+        roam: true,
+        zoom: 1.2,
+        aspectScale: 0.75,
         label: {
           show: mapData.detail === 'municipality',
           fontSize: 10,
@@ -340,6 +357,15 @@ function buildMapOption(mapData: MapInput): echarts.EChartsOption {
           itemStyle: {
             areaColor: '#ffd700',
           },
+        },
+        select: {
+          itemStyle: {
+            areaColor: '#4575b4',
+          },
+        },
+        itemStyle: {
+          borderColor: '#999',
+          borderWidth: 0.5,
         },
       },
     ],
@@ -404,6 +430,20 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
   const chartRef = useRef<echarts.ECharts | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [chartReady, setChartReady] = useState(false);
+
+  const hasRenderableDimensions = useCallback(() => {
+    const container = containerRef.current;
+
+    if (!container) {
+      return false;
+    }
+
+    const { width, height } = container.getBoundingClientRect();
+
+    return width > 0 && height > 0;
+  }, []);
 
   const scheduleResize = useCallback(() => {
     if (resizeTimerRef.current) {
@@ -424,15 +464,13 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
   }, [rawJson]);
 
   const validated = useMemo(
-    () => (parsed.error || !parsed.data ? null : resolveValidatedData(parsed.data)),
+    () =>
+      parsed.error || !parsed.data ? null : resolveValidatedData(parsed.data),
     [parsed.data, parsed.error]
   );
 
   const mapData = useMemo(
-    () =>
-      validated?.kind === 'map'
-        ? (validated.data as MapInput)
-        : null,
+    () => (validated?.kind === 'map' ? (validated.data as MapInput) : null),
     [validated]
   );
 
@@ -448,44 +486,74 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
   );
 
   useEffect(() => {
-    if (!containerRef.current) {
-      return;
-    }
-
-    const instance = echarts.init(containerRef.current);
-    chartRef.current = instance;
-    onChartInit?.(instance);
-    scheduleResize();
+    let cancelled = false;
 
     const handleResize = () => {
       chartRef.current?.resize();
     };
 
-    if (typeof ResizeObserver !== 'undefined') {
-      resizeObserverRef.current = new ResizeObserver(() => {
-        scheduleResize();
-      });
-      resizeObserverRef.current.observe(containerRef.current);
-    }
+    const initChart = () => {
+      if (cancelled || chartRef.current) {
+        return;
+      }
 
-    window.addEventListener('resize', handleResize);
+      const container = containerRef.current;
+
+      if (!container) {
+        return;
+      }
+
+      if (!hasRenderableDimensions()) {
+        initRetryTimerRef.current = setTimeout(initChart, 100);
+        return;
+      }
+
+      const instance = echarts.init(container);
+      chartRef.current = instance;
+      setChartReady(true);
+      onChartInit?.(instance);
+      scheduleResize();
+
+      if (typeof ResizeObserver !== 'undefined') {
+        resizeObserverRef.current = new ResizeObserver(() => {
+          scheduleResize();
+        });
+        resizeObserverRef.current.observe(container);
+      }
+
+      window.addEventListener('resize', handleResize);
+    };
+
+    initChart();
 
     return () => {
+      cancelled = true;
       window.removeEventListener('resize', handleResize);
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
+      if (initRetryTimerRef.current) {
+        clearTimeout(initRetryTimerRef.current);
+        initRetryTimerRef.current = null;
+      }
       if (resizeTimerRef.current) {
         clearTimeout(resizeTimerRef.current);
         resizeTimerRef.current = null;
       }
       chartRef.current?.dispose();
       chartRef.current = null;
+      setChartReady(false);
       onChartInit?.(null);
     };
-  }, [onChartInit, scheduleResize]);
+  }, [hasRenderableDimensions, onChartInit, scheduleResize]);
 
   useEffect(() => {
-    if (!chartRef.current || parsed.error || !parsed.data || !validated) {
+    if (
+      !chartReady ||
+      !chartRef.current ||
+      parsed.error ||
+      !parsed.data ||
+      !validated
+    ) {
       return;
     }
 
@@ -506,7 +574,16 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
     option = resolved;
     chartRef.current.setOption(option, true);
     scheduleResize();
-  }, [geoJson, geoLoading, mapData, parsed.data, parsed.error, scheduleResize, validated]);
+  }, [
+    chartReady,
+    geoJson,
+    geoLoading,
+    mapData,
+    parsed.data,
+    parsed.error,
+    scheduleResize,
+    validated,
+  ]);
 
   if (parsed.error !== null) {
     return <ErrorDisplay rawJson={rawJson} />;
