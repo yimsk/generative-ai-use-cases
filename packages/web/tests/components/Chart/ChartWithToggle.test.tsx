@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChartWithToggle } from '../../../src/components/Chart/ChartWithToggle';
 
 const invalidDataLabel = 'chart.invalid_data';
@@ -88,27 +88,24 @@ const invalidChartDataJson = JSON.stringify({ foo: 'bar' });
 describe('ChartWithToggle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
     mockChartInstance.getDataURL.mockClear();
     mockChartInstance.resize.mockClear();
     mockChartInstance.dispose.mockClear();
     mockChartInstance.setOption.mockClear();
   });
 
-  it('renders chart view after auto-switch on code change', () => {
-    const { rerender } = render(<ChartWithToggle code="" />);
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-    rerender(<ChartWithToggle code={validBarChartJson} />);
-
-    act(() => {
-      vi.advanceTimersByTime(600);
-    });
+  it('renders chart view immediately with valid data', () => {
+    render(<ChartWithToggle code={validBarChartJson} />);
 
     expect(screen.getByTestId('chart-panel').className).toContain('visible');
     expect(screen.getByTestId('echarts-renderer')).toBeTruthy();
   });
 
-  it('shows chart view by default', () => {
+  it('shows chart view by default when data is valid', () => {
     render(<ChartWithToggle code={validBarChartJson} />);
 
     expect(screen.getByText('chart.view_chart')).toBeTruthy();
@@ -140,17 +137,10 @@ describe('ChartWithToggle', () => {
     expect(mockChartInstance.resize).toHaveBeenCalled();
   });
 
-  it('shows error for invalid JSON after auto-switch', () => {
-    const { rerender } = render(<ChartWithToggle code="" />);
+  it('shows code view for invalid JSON', () => {
+    render(<ChartWithToggle code={invalidJson} />);
 
-    rerender(<ChartWithToggle code={invalidJson} />);
-
-    act(() => {
-      vi.advanceTimersByTime(600);
-    });
-
-    expect(screen.getByText(invalidDataLabel)).toBeTruthy();
-    expect(screen.getByTestId('chart-panel').className).toContain('visible');
+    expect(screen.getByTestId('code-panel').className).toContain('visible');
   });
 
   it('renders SVG download button and downloads via chart instance from callback', () => {
@@ -176,16 +166,10 @@ describe('ChartWithToggle', () => {
     expect(ChartWithToggle).toBeDefined();
   });
 
-  it('shows error for valid json with invalid chart data', () => {
-    const { rerender } = render(<ChartWithToggle code="" />);
+  it('shows code view for valid json with invalid chart data', () => {
+    render(<ChartWithToggle code={invalidChartDataJson} />);
 
-    rerender(<ChartWithToggle code={invalidChartDataJson} />);
-
-    act(() => {
-      vi.advanceTimersByTime(600);
-    });
-
-    expect(screen.getByText(invalidDataLabel)).toBeTruthy();
+    expect(screen.getByTestId('code-panel').className).toContain('visible');
   });
 
   it('opens zoom modal and closes on escape', () => {
@@ -236,6 +220,74 @@ describe('ChartWithToggle', () => {
       type: 'svg',
       pixelRatio: 2,
       backgroundColor: '#fff',
+    });
+  });
+
+  describe('streaming scenarios', () => {
+    it('shows loading state when code is empty', () => {
+      render(<ChartWithToggle code="" />);
+
+      expect(screen.getByTestId('code-panel').className).toContain('visible');
+      expect(screen.getByText('chart.loading')).toBeTruthy();
+    });
+
+    it('switches to chart view when valid data arrives', () => {
+      const { rerender } = render(<ChartWithToggle code="" />);
+
+      expect(screen.getByTestId('code-panel').className).toContain('visible');
+
+      rerender(<ChartWithToggle code={validBarChartJson} />);
+
+      expect(screen.getByTestId('chart-panel').className).toContain('visible');
+      expect(screen.getByTestId('echarts-renderer')).toBeTruthy();
+    });
+
+    it('stays in code view when data is invalid JSON', () => {
+      render(<ChartWithToggle code={invalidJson} />);
+
+      expect(screen.getByTestId('code-panel').className).toContain('visible');
+    });
+
+    it('stays in code view when data is valid JSON but invalid chart data', () => {
+      render(<ChartWithToggle code={invalidChartDataJson} />);
+
+      expect(screen.getByTestId('code-panel').className).toContain('visible');
+    });
+
+    it('manual toggle to chart works with invalid data', () => {
+      render(<ChartWithToggle code={invalidJson} />);
+
+      expect(screen.getByTestId('code-panel').className).toContain('visible');
+
+      fireEvent.click(screen.getByText('chart.view_chart'));
+
+      expect(screen.getByTestId('chart-panel').className).toContain('visible');
+    });
+
+    it('manual toggle to code works with valid data', () => {
+      render(<ChartWithToggle code={validBarChartJson} />);
+
+      expect(screen.getByTestId('chart-panel').className).toContain('visible');
+
+      fireEvent.click(screen.getByText('chart.view_code'));
+
+      expect(screen.getByTestId('code-panel').className).toContain('visible');
+    });
+
+    it('resets manual override when code changes', () => {
+      const { rerender } = render(<ChartWithToggle code={validBarChartJson} />);
+
+      fireEvent.click(screen.getByText('chart.view_code'));
+      expect(screen.getByTestId('code-panel').className).toContain('visible');
+
+      const newValidData = JSON.stringify({
+        type: 'line',
+        title: 'New Chart',
+        data: [{ name: 'X', value: 100 }],
+      });
+      rerender(<ChartWithToggle code={newValidData} />);
+
+      expect(screen.getByTestId('chart-panel').className).toContain('visible');
     });
   });
 });
