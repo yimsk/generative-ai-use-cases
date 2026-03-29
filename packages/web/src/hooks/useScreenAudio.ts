@@ -40,17 +40,55 @@ const useScreenAudio = () => {
     return buildTranscriptView(rawTranscripts, language);
   }, [rawTranscripts, language]);
 
+  // Initialize transcribe client with race condition protection
   useEffect(() => {
-    // break if already set
     if (transcribeClient) return;
 
-    void createTranscribeClient().then((transcribe) => {
-      if (!transcribe) {
-        return;
-      }
+    let cancelled = false;
+    let client: TranscribeStreamingClient | undefined;
+    let handedOff = false;
 
-      setTranscribeClient(transcribe);
-    });
+    const setupClient = async () => {
+      try {
+        client = await createTranscribeClient();
+        if (!client) {
+          return;
+        }
+
+        if (cancelled) {
+          client.destroy();
+          return;
+        }
+
+        handedOff = true;
+        setTranscribeClient(client);
+        setError('');
+      } catch (clientError) {
+        if (!cancelled) {
+          setError(
+            clientError instanceof Error
+              ? clientError.message
+              : 'Failed to initialize screen audio client'
+          );
+        }
+      }
+    };
+
+    void setupClient();
+
+    return () => {
+      cancelled = true;
+      if (!handedOff) {
+        client?.destroy();
+      }
+    };
+  }, [transcribeClient]);
+
+  // Dispose transcribe client on unmount
+  useEffect(() => {
+    return () => {
+      transcribeClient?.destroy();
+    };
   }, [transcribeClient]);
 
   const startStream = async (
@@ -109,7 +147,6 @@ const useScreenAudio = () => {
       stopTranscription();
     } finally {
       stopTranscription();
-      transcribeClient.destroy();
     }
   };
 

@@ -28,10 +28,48 @@ type BidirectionalStreamEvent = {
   event: Record<string, unknown>;
 };
 
+enum SessionState {
+  IDLE = 'IDLE',
+  SESSION_ACTIVE = 'SESSION_ACTIVE',
+  AUDIO_OPEN = 'AUDIO_OPEN',
+  AUDIO_PROCESSING = 'AUDIO_PROCESSING',
+  STOPPING = 'STOPPING',
+}
+
+enum SessionAction {
+  START = 'START',
+  AUDIO_START = 'AUDIO_START',
+  AUDIO_PROCESSING_START = 'AUDIO_PROCESSING_START',
+  AUDIO_PROCESSING_COMPLETE = 'AUDIO_PROCESSING_COMPLETE',
+  AUDIO_STOP = 'AUDIO_STOP',
+  SESSION_END = 'SESSION_END',
+}
+
+const SESSION_STATE_TRANSITIONS: Record<
+  SessionState,
+  Partial<Record<SessionAction, SessionState>>
+> = {
+  [SessionState.IDLE]: {
+    [SessionAction.START]: SessionState.SESSION_ACTIVE,
+  },
+  [SessionState.SESSION_ACTIVE]: {
+    [SessionAction.AUDIO_START]: SessionState.AUDIO_OPEN,
+  },
+  [SessionState.AUDIO_OPEN]: {
+    [SessionAction.AUDIO_PROCESSING_START]: SessionState.AUDIO_PROCESSING,
+    [SessionAction.AUDIO_STOP]: SessionState.STOPPING,
+  },
+  [SessionState.AUDIO_PROCESSING]: {
+    [SessionAction.AUDIO_PROCESSING_COMPLETE]: SessionState.AUDIO_OPEN,
+    [SessionAction.AUDIO_STOP]: SessionState.STOPPING,
+  },
+  [SessionState.STOPPING]: {
+    [SessionAction.SESSION_END]: SessionState.IDLE,
+  },
+};
+
 class SpeechToSpeechSession {
-  private isActive = false;
-  private isProcessingAudio = false;
-  private isAudioStarted = false;
+  private state = SessionState.IDLE;
   private eventQueue: BidirectionalStreamEvent[] = [];
   private audioInputQueue: string[] = [];
   private audioOutputQueue: string[] = [];
@@ -39,9 +77,30 @@ class SpeechToSpeechSession {
   private audioContentId = randomUUID();
   private channel: EventsChannel | null = null;
 
+  private transition(action: SessionAction) {
+    const nextState = SESSION_STATE_TRANSITIONS[this.state][action];
+
+    if (!nextState) {
+      throw new Error(`Invalid session transition: ${this.state} -> ${action}`);
+    }
+
+    this.state = nextState;
+  }
+
+  private isSessionOpen() {
+    return this.state !== SessionState.IDLE;
+  }
+
+  private isAudioOpen() {
+    return (
+      this.state === SessionState.AUDIO_OPEN ||
+      this.state === SessionState.AUDIO_PROCESSING
+    );
+  }
+
   start() {
     this.initialize();
-    this.isActive = true;
+    this.transition(SessionAction.START);
     this.promptName = randomUUID();
   }
 
@@ -60,9 +119,7 @@ class SpeechToSpeechSession {
   }
 
   private initialize() {
-    this.isActive = false;
-    this.isProcessingAudio = false;
-    this.isAudioStarted = false;
+    this.state = SessionState.IDLE;
     this.channel = null;
     this.clearQueue();
   }
@@ -167,6 +224,7 @@ class SpeechToSpeechSession {
   }
 
   enqueueAudioStart() {
+    this.transition(SessionAction.AUDIO_START);
     this.audioContentId = randomUUID();
 
     this.eventQueue.push({
@@ -188,8 +246,6 @@ class SpeechToSpeechSession {
         },
       },
     });
-
-    this.isAudioStarted = true;
   }
 
   enqueuePromptEnd() {
@@ -211,7 +267,11 @@ class SpeechToSpeechSession {
   }
 
   enqueueAudioStop() {
-    this.isAudioStarted = false;
+    if (!this.isAudioOpen()) {
+      return;
+    }
+
+    this.transition(SessionAction.AUDIO_STOP);
 
     this.clearQueue();
 
@@ -223,10 +283,13 @@ class SpeechToSpeechSession {
         },
       },
     });
+
+    this.enqueuePromptEnd();
+    this.enqueueSessionEnd();
   }
 
   enqueueAudioInput(audioInputBase64Array: string[]) {
-    if (!this.isAudioStarted || !this.isActive) {
+    if (!this.isAudioOpen()) {
       return;
     }
 
@@ -238,8 +301,8 @@ class SpeechToSpeechSession {
       this.audioInputQueue.shift();
     }
 
-    if (!this.isProcessingAudio) {
-      this.isProcessingAudio = true;
+    if (this.state === SessionState.AUDIO_OPEN) {
+      this.transition(SessionAction.AUDIO_PROCESSING_START);
       void this.processAudioQueue();
     }
   }
@@ -288,7 +351,7 @@ class SpeechToSpeechSession {
             IteratorResult<InvokeModelWithBidirectionalStreamInput>
           > => {
             try {
-              while (this.eventQueue.length === 0 && this.isActive) {
+              while (this.eventQueue.length === 0 && this.isSessionOpen()) {
                 await new Promise((s) => setTimeout(s, 100));
               }
 
@@ -299,7 +362,7 @@ class SpeechToSpeechSession {
               }
 
               if (nextEvent.event.sessionEnd) {
-                this.isActive = false;
+                this.transition(SessionAction.SESSION_END);
               }
 
               return {
@@ -331,8 +394,7 @@ class SpeechToSpeechSession {
   private async processAudioQueue() {
     while (
       this.audioInputQueue.length > 0 &&
-      this.isAudioStarted &&
-      this.isActive
+      this.state === SessionState.AUDIO_PROCESSING
     ) {
       const audioChunk = this.audioInputQueue.shift();
 
@@ -347,14 +409,11 @@ class SpeechToSpeechSession {
       });
     }
 
-    if (this.isAudioStarted && this.isActive) {
-      setTimeout(() => {
-        void this.processAudioQueue();
-      }, 0);
-    } else {
-      console.log('Processing audio is ended.');
-      this.isProcessingAudio = false;
+    if (this.state === SessionState.AUDIO_PROCESSING) {
+      this.transition(SessionAction.AUDIO_PROCESSING_COMPLETE);
     }
+
+    console.log('Processing audio is ended.');
   }
 
   async processResponseStream(
@@ -371,7 +430,9 @@ class SpeechToSpeechSession {
           const jsonResponse = JSON.parse(textResponse);
 
           if (jsonResponse.event?.audioOutput) {
-            await this.enqueueAudioOutput(jsonResponse.event.audioOutput.content);
+            await this.enqueueAudioOutput(
+              jsonResponse.event.audioOutput.content
+            );
           } else if (
             jsonResponse.event?.contentEnd &&
             jsonResponse.event?.contentEnd?.type === 'AUDIO'
@@ -536,8 +597,6 @@ export const handler = async (event: { channelId: string; model: Model }) => {
             session.enqueueAudioInput(channelEvent.data);
           } else if (channelEvent.event === 'audioStop') {
             session.enqueueAudioStop();
-            session.enqueuePromptEnd();
-            session.enqueueSessionEnd();
           }
         }
       },

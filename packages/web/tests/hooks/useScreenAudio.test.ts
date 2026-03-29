@@ -191,7 +191,7 @@ describe('useScreenAudio', () => {
       ]),
     });
 
-    const { result } = renderHook(() => useScreenAudio());
+    const { result, unmount } = renderHook(() => useScreenAudio());
 
     await waitFor(() => {
       expect(result.current.isSupported).toBe(true);
@@ -223,11 +223,14 @@ describe('useScreenAudio', () => {
       },
     ]);
     expect(result.current.recording).toBe(false);
+
+    // Unmount to trigger client disposal
+    unmount();
     expect(mocks.clientInstances[0].destroy).toHaveBeenCalledTimes(1);
   });
 
   it('cleans up a prepared display stream when stopped', async () => {
-    const { result } = renderHook(() => useScreenAudio());
+    const { result, unmount } = renderHook(() => useScreenAudio());
 
     await waitFor(() => {
       expect(result.current.isSupported).toBe(true);
@@ -255,7 +258,7 @@ describe('useScreenAudio', () => {
       deniedError
     );
 
-    const { result } = renderHook(() => useScreenAudio());
+    const { result, unmount } = renderHook(() => useScreenAudio());
 
     await waitFor(() => {
       expect(result.current.isSupported).toBe(true);
