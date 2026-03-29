@@ -4,24 +4,12 @@ import { ChartWithToggle } from '../../../src/components/Chart/ChartWithToggle';
 
 const invalidDataLabel = 'chart.invalid_data';
 
-const { mockGetDataURL, mockResize, mockGetInstanceByDom } = vi.hoisted(() => {
-  const getDataURL = vi.fn(() => 'data:image/svg+xml;base64,chart');
-  const resize = vi.fn();
-  const getInstanceByDom = vi.fn(() => ({
-    getDataURL,
-    resize,
-  }));
-
-  return {
-    mockGetDataURL: getDataURL,
-    mockResize: resize,
-    mockGetInstanceByDom: getInstanceByDom,
-  };
-});
-
-vi.mock('echarts', () => ({
-  getInstanceByDom: mockGetInstanceByDom,
-}));
+const mockChartInstance = {
+  getDataURL: vi.fn(() => 'data:image/svg+xml;base64,chart'),
+  resize: vi.fn(),
+  dispose: vi.fn(),
+  setOption: vi.fn(),
+};
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -42,7 +30,13 @@ vi.mock('../../../src/hooks/useInterUseCases', () => ({
 }));
 
 vi.mock('../../../src/components/Chart/EChartsRenderer', () => ({
-  default: ({ rawJson }: { rawJson: string }) => {
+  default: ({
+    rawJson,
+    onChartInit,
+  }: {
+    rawJson: string;
+    onChartInit?: (instance: unknown) => void;
+  }) => {
     try {
       const parsed = JSON.parse(rawJson) as {
         title?: string;
@@ -57,6 +51,10 @@ vi.mock('../../../src/components/Chart/EChartsRenderer', () => ({
 
       if (!isValid) {
         return <div>{invalidDataLabel}</div>;
+      }
+
+      if (onChartInit) {
+        onChartInit(mockChartInstance);
       }
 
       return (
@@ -91,9 +89,10 @@ describe('ChartWithToggle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2024-01-01T00:00:00.000Z'));
-    mockGetDataURL.mockClear();
-    mockResize.mockClear();
-    mockGetInstanceByDom.mockClear();
+    mockChartInstance.getDataURL.mockClear();
+    mockChartInstance.resize.mockClear();
+    mockChartInstance.dispose.mockClear();
+    mockChartInstance.setOption.mockClear();
   });
 
   it('renders chart view after auto-switch on code change', () => {
@@ -138,7 +137,7 @@ describe('ChartWithToggle', () => {
     });
 
     expect(screen.getByTestId('chart-panel').className).toContain('visible');
-    expect(mockResize).toHaveBeenCalled();
+    expect(mockChartInstance.resize).toHaveBeenCalled();
   });
 
   it('shows error for invalid JSON after auto-switch', () => {
@@ -154,7 +153,7 @@ describe('ChartWithToggle', () => {
     expect(screen.getByTestId('chart-panel').className).toContain('visible');
   });
 
-  it('renders SVG download button and downloads via echarts api', () => {
+  it('renders SVG download button and downloads via chart instance from callback', () => {
     const clickSpy = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => {});
@@ -163,10 +162,7 @@ describe('ChartWithToggle', () => {
 
     fireEvent.click(screen.getByTitle('chart.download_svg'));
 
-    expect(mockGetInstanceByDom).toHaveBeenCalledWith(
-      expect.any(HTMLDivElement)
-    );
-    expect(mockGetDataURL).toHaveBeenCalledWith({
+    expect(mockChartInstance.getDataURL).toHaveBeenCalledWith({
       type: 'svg',
       pixelRatio: 2,
       backgroundColor: '#fff',
@@ -202,10 +198,44 @@ describe('ChartWithToggle', () => {
     });
 
     expect(screen.getByTestId('chart-zoom-modal')).toBeTruthy();
-    expect(mockResize).toHaveBeenCalled();
+    expect(mockChartInstance.resize).toHaveBeenCalled();
 
     fireEvent.keyDown(window, { key: 'Escape' });
 
     expect(screen.queryByTestId('chart-zoom-modal')).toBeNull();
+  });
+
+  it('receives chart instance via onChartInit callback from EChartsRenderer', () => {
+    render(<ChartWithToggle code={validBarChartJson} />);
+
+    expect(mockChartInstance.getDataURL).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTitle('chart.download_svg'));
+
+    expect(mockChartInstance.getDataURL).toHaveBeenCalledWith({
+      type: 'svg',
+      pixelRatio: 2,
+      backgroundColor: '#fff',
+    });
+  });
+
+  it('uses zoom chart instance for download when zoom modal is open', () => {
+    render(<ChartWithToggle code={validBarChartJson} />);
+
+    fireEvent.click(screen.getByTitle('Zoom chart'));
+
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+
+    expect(screen.getByTestId('chart-zoom-modal')).toBeTruthy();
+
+    fireEvent.click(screen.getByTitle('chart.download_svg'));
+
+    expect(mockChartInstance.getDataURL).toHaveBeenCalledWith({
+      type: 'svg',
+      pixelRatio: 2,
+      backgroundColor: '#fff',
+    });
   });
 });

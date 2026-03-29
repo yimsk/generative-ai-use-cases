@@ -4,7 +4,7 @@ import { VscCode } from 'react-icons/vsc';
 import { LuChartBar, LuExpand } from 'react-icons/lu';
 import { IoIosClose, IoMdDownload } from 'react-icons/io';
 import { TbSvg } from 'react-icons/tb';
-import * as echarts from 'echarts';
+import type * as echarts from 'echarts';
 
 import ButtonCopy from '../ButtonCopy';
 import Button from '../Button';
@@ -24,41 +24,27 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
   const prevCodeRef = useRef(code);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const chartWrapperRef = useRef<HTMLDivElement>(null);
-  const zoomChartWrapperRef = useRef<HTMLDivElement>(null);
 
-  const getChartInstance = useCallback(() => {
-    const wrappers = [zoomChartWrapperRef.current, chartWrapperRef.current];
+  const mainChartRef = useRef<echarts.ECharts | null>(null);
+  const zoomChartRef = useRef<echarts.ECharts | null>(null);
 
-    for (const wrapper of wrappers) {
-      if (!wrapper) {
-        continue;
-      }
-
-      const rendererRoot = wrapper.firstElementChild;
-
-      if (!(rendererRoot instanceof HTMLDivElement)) {
-        continue;
-      }
-
-      const chartContainer = Array.from(rendererRoot.children).find(
-        (child): child is HTMLDivElement =>
-          child instanceof HTMLDivElement && child.style.height === '300px'
-      );
-
-      if (!chartContainer) {
-        continue;
-      }
-
-      const chartInstance = echarts.getInstanceByDom(chartContainer);
-
-      if (chartInstance) {
-        return chartInstance;
-      }
-    }
-
-    return null;
+  const chartInstance = useCallback((): echarts.ECharts | null => {
+    return zoomChartRef.current ?? mainChartRef.current;
   }, []);
+
+  const handleMainChartInit = useCallback(
+    (instance: echarts.ECharts | null) => {
+      mainChartRef.current = instance;
+    },
+    []
+  );
+
+  const handleZoomChartInit = useCallback(
+    (instance: echarts.ECharts | null) => {
+      zoomChartRef.current = instance;
+    },
+    []
+  );
 
   const scheduleChartResize = useCallback(() => {
     if (resizeTimerRef.current) {
@@ -66,11 +52,10 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
     }
 
     resizeTimerRef.current = setTimeout(() => {
-      getChartInstance()?.resize();
+      chartInstance()?.resize();
     }, 0);
-  }, [getChartInstance]);
+  }, [chartInstance]);
 
-  // Auto-switch to chart view when code becomes stable (no changes for 500ms)
   useEffect(() => {
     if (code !== prevCodeRef.current) {
       prevCodeRef.current = code;
@@ -103,7 +88,6 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
     };
   }, [scheduleChartResize, viewMode, zoom]);
 
-  // Handle escape key for zoom
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -114,15 +98,14 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
-  // Download as SVG
   const downloadAsSVG = useCallback(() => {
-    const chartInstance = getChartInstance();
+    const instance = chartInstance();
 
-    if (!chartInstance) {
+    if (!instance) {
       return;
     }
 
-    const url = chartInstance.getDataURL({
+    const url = instance.getDataURL({
       type: 'svg',
       pixelRatio: 2,
       backgroundColor: '#fff',
@@ -134,15 +117,13 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [getChartInstance]);
+  }, [chartInstance]);
 
   return (
     <>
       <div className="my-4 rounded-lg border border-gray-200 bg-white">
-        {/* Toggle header */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-3 py-2">
           <div className="flex items-center gap-2">
-            {/* View mode toggle */}
             <div className="flex rounded border bg-gray-50 text-xs font-bold">
               <button
                 type="button"
@@ -162,7 +143,6 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
               </button>
             </div>
 
-            {/* Download button */}
             <Button
               outlined
               onClick={downloadAsSVG}
@@ -185,7 +165,6 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
           <ButtonCopy className="text-gray-400" text={code} />
         </div>
 
-        {/* Content area */}
         <div className="relative overflow-hidden">
           <div
             data-testid="chart-panel"
@@ -194,9 +173,10 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
                 ? 'visible opacity-100'
                 : 'invisible absolute left-0 top-0 h-0 opacity-0'
             }`}>
-            <div ref={chartWrapperRef}>
-              <EChartsRenderer rawJson={code} />
-            </div>
+            <EChartsRenderer
+              rawJson={code}
+              onChartInit={handleMainChartInit}
+            />
           </div>
           <div
             data-testid="code-panel"
@@ -218,7 +198,6 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
         </div>
       </div>
 
-      {/* Zoom modal */}
       {zoom && (
         <>
           <button
@@ -238,9 +217,10 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
               </button>
             </div>
             <div className="flex-1 overflow-auto px-8 pb-8">
-              <div ref={zoomChartWrapperRef}>
-                <EChartsRenderer rawJson={code} />
-              </div>
+              <EChartsRenderer
+                rawJson={code}
+                onChartInit={handleZoomChartInit}
+              />
             </div>
           </div>
         </>
