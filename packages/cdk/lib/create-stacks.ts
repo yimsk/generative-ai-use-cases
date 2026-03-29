@@ -143,9 +143,7 @@ const createRegionScopedResources = (
   params: ProcessedStackInput
 ): Record<string, string> => {
   const videoModelRegions = [
-    ...new Set(
-      params.videoGenerationModelIds.map((model) => model.region)
-    ),
+    ...new Set(params.videoGenerationModelIds.map((model) => model.region)),
   ];
   const videoBucketRegionMap: Record<string, string> = {};
 

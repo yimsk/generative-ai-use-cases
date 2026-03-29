@@ -115,7 +115,8 @@ const createTextModel = ({
   createConverseCommandInput: buildConverseCommandInput,
   createConverseStreamCommandInput: buildConverseStreamCommandInput,
   extractConverseOutput: extractOutput = extractConverseOutput,
-  extractConverseStreamOutput: extractStreamOutput = extractConverseStreamOutput,
+  extractConverseStreamOutput:
+    extractStreamOutput = extractConverseStreamOutput,
 }: TextModelFactoryOptions): TextGenerationModel => ({
   defaultParams,
   usecaseParams,
@@ -146,7 +147,9 @@ const createRegionalTextModelEntries = (
   includeBaseModel = true
 ): [string, TextGenerationModel][] =>
   createTextModelEntries(
-    includeBaseModel ? createModelIds(modelId, regions) : createPrefixedModelIds(modelId, regions),
+    includeBaseModel
+      ? createModelIds(modelId, regions)
+      : createPrefixedModelIds(modelId, regions),
     options
   );
 
@@ -476,12 +479,15 @@ export const BEDROCK_IMAGE_GEN_MODELS: Record<string, ImageGenerationModel> = {
 
 export const BEDROCK_VIDEO_GEN_MODELS: Record<string, VideoGenerationModel> = {
   'amazon.nova-reel-v1:0': {
-    createBodyVideo: (params) => createBodyVideoNovaReel(params) as unknown as VideoGenerationBody,
+    createBodyVideo: (params) =>
+      createBodyVideoNovaReel(params) as unknown as VideoGenerationBody,
   },
   'amazon.nova-reel-v1:1': {
-    createBodyVideo: (params) => createBodyVideoNovaReelV11(params) as unknown as VideoGenerationBody,
+    createBodyVideo: (params) =>
+      createBodyVideoNovaReelV11(params) as unknown as VideoGenerationBody,
   },
   'luma.ray-v2:0': {
-    createBodyVideo: (params) => createBodyVideoLumaRayV2(params) as unknown as VideoGenerationBody,
+    createBodyVideo: (params) =>
+      createBodyVideoLumaRayV2(params) as unknown as VideoGenerationBody,
   },
 };

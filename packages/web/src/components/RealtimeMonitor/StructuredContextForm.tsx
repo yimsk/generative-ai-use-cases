@@ -33,15 +33,15 @@ const StructuredContextForm: React.FC<Props> = ({
     background: 2000,
   };
 
-  const handleChange = (key: keyof StructuredContextValues) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const truncated = e.target.value.slice(0, maxLengths[key]);
-    onChange({
-      ...values,
-      [key]: truncated,
-    });
-  };
+  const handleChange =
+    (key: keyof StructuredContextValues) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const truncated = e.target.value.slice(0, maxLengths[key]);
+      onChange({
+        ...values,
+        [key]: truncated,
+      });
+    };
 
   return (
     <div className="space-y-4">

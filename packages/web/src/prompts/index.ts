@@ -125,6 +125,8 @@ export interface Prompter {
   promptList(t: TFunction): PromptList;
   diagramPrompt(params: DiagramParams): string;
   meetingMinutesPrompt(params: MeetingMinutesParams): string;
-  realtimeTranslationSplitPrompt(params: RealtimeTranslationSplitParams): string;
+  realtimeTranslationSplitPrompt(
+    params: RealtimeTranslationSplitParams
+  ): string;
   topicSummaryPrompt(params: TopicSummaryParams): string;
 }

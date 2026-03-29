@@ -634,11 +634,11 @@ monitor:
   secondary_language: Ngôn ngữ phụ
   start_recording: Bắt đầu ghi âm
   stop_recording: Dừng ghi âm
+  system_generated_context: Ngữ cảnh hệ thống
+  system_generated_context_placeholder: Ngữ cảnh do AI tạo sẽ xuất hiện ở đây...
   title: Màn hình giám sát dịch thuật thờigian thực
   topic_model: Mô hình chủ đề
   translation_model: Mô hình dịch thuật
-  system_generated_context: Ngữ cảnh hệ thống
-  system_generated_context_placeholder: Ngữ cảnh do AI tạo sẽ xuất hiện ở đây...
 navigation:
   agentChat: Agent Chat
   chat: Chat

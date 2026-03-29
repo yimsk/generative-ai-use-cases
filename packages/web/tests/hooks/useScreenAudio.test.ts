@@ -230,7 +230,7 @@ describe('useScreenAudio', () => {
   });
 
   it('cleans up a prepared display stream when stopped', async () => {
-    const { result, unmount } = renderHook(() => useScreenAudio());
+    const { result } = renderHook(() => useScreenAudio());
 
     await waitFor(() => {
       expect(result.current.isSupported).toBe(true);
@@ -258,7 +258,7 @@ describe('useScreenAudio', () => {
       deniedError
     );
 
-    const { result, unmount } = renderHook(() => useScreenAudio());
+    const { result } = renderHook(() => useScreenAudio());
 
     await waitFor(() => {
       expect(result.current.isSupported).toBe(true);

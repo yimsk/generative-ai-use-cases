@@ -538,11 +538,11 @@ monitor:
   secondary_language: 次要语言
   start_recording: 开始录音
   stop_recording: 停止录音
+  system_generated_context: 系统上下文
+  system_generated_context_placeholder: AI生成的上下文将显示在这里...
   title: 实时翻译监控器
   topic_model: 主题模型
   translation_model: 翻译模型
-  system_generated_context: 系统上下文
-  system_generated_context_placeholder: AI生成的上下文将显示在这里...
 navigation:
   agentChat: Agent聊天
   chat: 聊天

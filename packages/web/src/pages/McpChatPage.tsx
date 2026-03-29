@@ -18,8 +18,6 @@ import { UnrecordedMessage } from 'generative-ai-use-cases';
 import { McpPageQueryParams } from '../@types/navigate';
 import queryString from 'query-string';
 
-/* eslint-disable react-hooks/exhaustive-deps */
-
 type StateType = {
   content: string;
   inputSystemContext: string;

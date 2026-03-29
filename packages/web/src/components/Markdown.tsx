@@ -68,7 +68,10 @@ import xmlDoc from 'react-syntax-highlighter/dist/esm/languages/prism/xml-doc';
 import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
 
 const registerSyntaxLanguages = () => {
-  const languages: [string, Parameters<typeof SyntaxHighlighter.registerLanguage>[1]][] = [
+  const languages: [
+    string,
+    Parameters<typeof SyntaxHighlighter.registerLanguage>[1],
+  ][] = [
     ['bash', bash],
     ['c', c],
     ['cpp', cpp],
@@ -108,11 +111,7 @@ const isSvgCode = (code: string): boolean => {
 
 // -- S3 / file resolution renderers --
 
-const LinkRenderer: React.FC<LinkRendererProps> = ({
-  href,
-  id,
-  children,
-}) => {
+const LinkRenderer: React.FC<LinkRendererProps> = ({ href, id, children }) => {
   const { downloadDoc, isS3Url, downloading } = useRagFile();
   const isS3 = useMemo(() => isS3Url(href ?? ''), [isS3Url, href]);
 

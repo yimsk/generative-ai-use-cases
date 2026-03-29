@@ -20,7 +20,9 @@ interface ChartWithToggleProps {
 
 export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
   const { t } = useTranslation();
-  const [manualViewMode, setManualViewMode] = useState<'chart' | 'code' | null>(null);
+  const [manualViewMode, setManualViewMode] = useState<'chart' | 'code' | null>(
+    null
+  );
   const [zoom, setZoom] = useState(false);
   const prevCodeRef = useRef(code);
   const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -172,10 +174,7 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
                 ? 'visible opacity-100'
                 : 'invisible absolute left-0 top-0 h-0 opacity-0'
             }`}>
-            <EChartsRenderer
-              rawJson={code}
-              onChartInit={handleMainChartInit}
-            />
+            <EChartsRenderer rawJson={code} onChartInit={handleMainChartInit} />
           </div>
           <div
             data-testid="code-panel"
@@ -185,7 +184,7 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
                 : 'invisible absolute left-0 top-0 h-0 opacity-0'
             }`}>
             {manualViewMode === null && code.trim() === '' && (
-              <div className="flex h-24 items-center justify-center text-gray-400 text-sm">
+              <div className="flex h-24 items-center justify-center text-sm text-gray-400">
                 {t('chart.loading')}
               </div>
             )}

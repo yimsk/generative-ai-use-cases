@@ -3,8 +3,6 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import useSWR, { SWRConfiguration } from 'swr';
 import useSWRInfinite from 'swr/infinite';
 
-/* eslint-disable react-hooks/rules-of-hooks */
-
 const api = axios.create({
   baseURL: import.meta.env.VITE_APP_API_ENDPOINT,
 });

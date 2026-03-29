@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import StructuredContextForm, { type StructuredContextValues } from './StructuredContextForm';
+import StructuredContextForm, {
+  type StructuredContextValues,
+} from './StructuredContextForm';
 
 type Props = {
   values: StructuredContextValues;
@@ -8,7 +10,11 @@ type Props = {
   systemGeneratedContext?: string;
 };
 
-const RecordingContextMenu: React.FC<Props> = ({ values, onChange, systemGeneratedContext }) => {
+const RecordingContextMenu: React.FC<Props> = ({
+  values,
+  onChange,
+  systemGeneratedContext,
+}) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -17,8 +23,7 @@ const RecordingContextMenu: React.FC<Props> = ({ values, onChange, systemGenerat
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="rounded border border-gray-600 bg-gray-700 px-3 py-1 text-xs text-gray-300 hover:bg-gray-600"
-      >
+        className="rounded border border-gray-600 bg-gray-700 px-3 py-1 text-xs text-gray-300 hover:bg-gray-600">
         {t('monitor.edit_context')}
       </button>
 
@@ -29,8 +34,7 @@ const RecordingContextMenu: React.FC<Props> = ({ values, onChange, systemGenerat
             <div className="mt-4">
               <label
                 htmlFor="systemGeneratedContext"
-                className="text-sm font-medium text-gray-700"
-              >
+                className="text-sm font-medium text-gray-700">
                 {t('monitor.system_generated_context')}
               </label>
               <textarea
