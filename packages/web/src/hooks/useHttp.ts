@@ -37,7 +37,8 @@ const useHttp = () => {
      * @param url
      * @returns
      */
-    get: <Data = unknown, Error = unknown>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    get: <Data = any, Error = any>(
       url: string | null,
       config?: SWRConfiguration
     ) => {
@@ -45,11 +46,10 @@ const useHttp = () => {
       return useSWR<Data, Error>(url, fetcher, config);
     },
 
-    getPagination: <Data = unknown, Error = unknown>(
-      getKey: (
-        pageIndex: number,
-        previousPageData: Data | null
-      ) => string | null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getPagination: <Data = any, Error = any>(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      getKey: (pageIndex: number, previousPageData: any) => string | null,
       config?: SWRConfiguration
     ) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -62,11 +62,13 @@ const useHttp = () => {
      * @param data
      * @returns
      */
-    post: <RES = unknown, DATA = unknown>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    post: <RES = any, DATA = any>(
       url: string,
       data: DATA,
       reqConfig?: AxiosRequestConfig,
-      errorProcess?: (err: unknown) => void
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      errorProcess?: (err: any) => void
     ): Promise<AxiosResponse<RES>> => {
       return api
         .post<RES, AxiosResponse<RES>, DATA>(url, data, reqConfig)
@@ -84,10 +86,12 @@ const useHttp = () => {
      * @param data
      * @returns
      */
-    put: <RES = unknown, DATA = unknown>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    put: <RES = any, DATA = any>(
       url: string,
       data: DATA,
-      errorProcess?: (err: unknown) => void
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      errorProcess?: (err: any) => void
     ): Promise<AxiosResponse<RES>> => {
       return api.put<RES, AxiosResponse<RES>, DATA>(url, data).catch((err) => {
         if (errorProcess) {
@@ -101,9 +105,11 @@ const useHttp = () => {
      * @param url
      * @returns
      */
-    delete: <RES = unknown, DATA = unknown>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete: <RES = any, DATA = any>(
       url: string,
-      errorProcess?: (err: unknown) => void
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      errorProcess?: (err: any) => void
     ): Promise<AxiosResponse<RES>> => {
       return api.delete<RES, AxiosResponse<RES>, DATA>(url).catch((err) => {
         if (errorProcess) {
