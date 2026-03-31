@@ -7,6 +7,23 @@ interface UseGeoJSONResult {
   error: string | null;
 }
 
+export function getMapKey(
+  region: string,
+  detail?: string,
+  prefecture?: string
+): string {
+  if (region === 'world') {
+    return 'world';
+  }
+  if (detail === 'municipality' && prefecture) {
+    return `${region}-municipality-${prefecture}`;
+  }
+  if (detail === 'prefecture') {
+    return `${region}-prefecture`;
+  }
+  return region;
+}
+
 export function useGeoJSON(
   region: string | undefined,
   detail?: string,
@@ -31,10 +48,15 @@ export function useGeoJSON(
       setError(null);
 
       try {
-        const url =
-          detail === 'municipality' && prefecture
-            ? `/geojson/prefectures/${prefecture}.geojson`
-            : '/geojson/japan-prefectures.geojson';
+        let url: string;
+
+        if (detail === 'municipality' && prefecture) {
+          url = `/geojson/prefectures/${prefecture}.geojson`;
+        } else if (region === 'world') {
+          url = '/geojson/world-countries.geojson';
+        } else {
+          url = '/geojson/japan-prefectures.geojson';
+        }
 
         const response = await fetch(url);
 
@@ -48,7 +70,8 @@ export function useGeoJSON(
           return;
         }
 
-        echarts.registerMap(region, data);
+        const mapKey = getMapKey(region, detail, prefecture);
+        echarts.registerMap(mapKey, data);
         setGeoJson(data);
       } catch (error) {
         if (!cancelled) {

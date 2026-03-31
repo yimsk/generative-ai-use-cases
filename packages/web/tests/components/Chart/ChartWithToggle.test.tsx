@@ -82,6 +82,16 @@ const validBarChartJson = JSON.stringify({
   ],
 });
 
+const validScatterChartJson = JSON.stringify({
+  type: 'scatter',
+  title: 'Scatter Chart',
+  data: [
+    { name: 'A', value: [1, 2] },
+    { name: 'B', value: [3, 4] },
+    { name: 'C', value: [5, 6] },
+  ],
+});
+
 const invalidJson = 'not valid json {{{';
 const invalidChartDataJson = JSON.stringify({ foo: 'bar' });
 
@@ -149,6 +159,41 @@ describe('ChartWithToggle', () => {
       .mockImplementation(() => {});
 
     render(<ChartWithToggle code={validBarChartJson} />);
+
+    fireEvent.click(screen.getByTitle('chart.download_svg'));
+
+    expect(mockChartInstance.getDataURL).toHaveBeenCalledWith({
+      type: 'svg',
+      pixelRatio: 2,
+      backgroundColor: '#fff',
+    });
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+
+    clickSpy.mockRestore();
+  });
+
+  it('renders scatter charts without visible labels and keeps zoom/download wiring', () => {
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {});
+
+    render(<ChartWithToggle code={validScatterChartJson} />);
+
+    expect(screen.getByTestId('chart-panel').className).toContain('visible');
+    expect(screen.getByTestId('code-panel').className).not.toMatch(
+      /(^|\s)visible(\s|$)/
+    );
+    expect(screen.getByTestId('echarts-renderer')).toBeTruthy();
+    expect(screen.queryByText(invalidDataLabel)).toBeNull();
+
+    fireEvent.click(screen.getByTitle('Zoom chart'));
+
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+
+    expect(screen.getByTestId('chart-zoom-modal')).toBeTruthy();
+    expect(mockChartInstance.resize).toHaveBeenCalled();
 
     fireEvent.click(screen.getByTitle('chart.download_svg'));
 

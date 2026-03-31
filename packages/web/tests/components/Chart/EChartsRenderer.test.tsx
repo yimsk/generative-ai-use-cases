@@ -80,6 +80,45 @@ const multiSeriesData = {
   ],
 };
 
+const reorderedMultiSeriesData = {
+  type: 'line',
+  series: [
+    {
+      name: 'Series1',
+      data: [
+        { name: 'A', value: 10 },
+        { name: 'B', value: 20 },
+        { name: 'C', value: 30 },
+      ],
+    },
+    {
+      name: 'Series2',
+      data: [
+        { name: 'B', value: 200 },
+        { name: 'A', value: 100 },
+        { name: 'D', value: 400 },
+      ],
+    },
+  ],
+};
+
+const duplicateCategorySeriesData = {
+  type: 'bar',
+  series: [
+    {
+      name: 'Series1',
+      data: [
+        { name: 'A', value: 10 },
+        { name: 'A', value: 20 },
+      ],
+    },
+    {
+      name: 'Series2',
+      data: [{ name: 'A', value: 30 }],
+    },
+  ],
+};
+
 const boxplotData = {
   type: 'boxplot',
   labels: ['A', 'B'],
@@ -118,6 +157,22 @@ const candlestickData = {
     [20, 25, 18, 27],
     [25, 22, 21, 28],
   ],
+};
+
+const scatterData = {
+  type: 'scatter',
+  data: [
+    { name: 'A', value: [10, 20] },
+    { name: 'B', value: [20, 30] },
+    { name: 'C', value: [30, 40] },
+  ],
+};
+
+const namedTupleScatterData = {
+  type: 'scatter',
+  xAxisLabel: 'GDP',
+  yAxisLabel: 'Population',
+  data: [{ name: 'Tokyo', value: [100, 200] }],
 };
 
 function createDeferred<T>() {
@@ -259,11 +314,7 @@ describe('EChartsRenderer', () => {
   });
 
   it('renders scatter chart', async () => {
-    render(
-      <EChartsRenderer
-        rawJson={JSON.stringify({ ...singleSeriesData, type: 'scatter' })}
-      />
-    );
+    render(<EChartsRenderer rawJson={JSON.stringify(scatterData)} />);
 
     await waitFor(() => {
       expect(mockSetOption).toHaveBeenCalledWith(
@@ -276,15 +327,79 @@ describe('EChartsRenderer', () => {
             expect.objectContaining({
               type: 'scatter',
               data: [
-                [10, 10],
-                [20, 20],
-                [30, 30],
+                { name: 'A', value: [10, 20] },
+                { name: 'B', value: [20, 30] },
+                { name: 'C', value: [30, 40] },
               ],
             }),
           ],
         }),
         true
       );
+    });
+  });
+
+  it('uses item tooltip for named tuple scatter points', async () => {
+    render(<EChartsRenderer rawJson={JSON.stringify(namedTupleScatterData)} />);
+
+    await waitFor(() => {
+      expect(mockSetOption).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tooltip: expect.objectContaining({
+            trigger: 'item',
+            formatter: expect.any(Function),
+          }),
+          series: [
+            expect.objectContaining({
+              type: 'scatter',
+              data: [{ name: 'Tokyo', value: [100, 200] }],
+            }),
+          ],
+        }),
+        true
+      );
+
+      const option = mockSetOption.mock.calls.at(-1)?.[0] as {
+        tooltip?: { formatter?: (params: unknown) => string };
+      };
+      const formatter = option.tooltip?.formatter;
+
+      expect(formatter).toBeTypeOf('function');
+      expect(
+        formatter?.({
+          name: 'Tokyo',
+          value: [100, 200],
+          data: { name: 'Tokyo', value: [100, 200] },
+        })
+      ).toContain('Tokyo');
+      expect(
+        formatter?.({
+          name: 'Tokyo',
+          value: [100, 200],
+          data: { name: 'Tokyo', value: [100, 200] },
+        })
+      ).toContain('GDP');
+      expect(
+        formatter?.({
+          name: 'Tokyo',
+          value: [100, 200],
+          data: { name: 'Tokyo', value: [100, 200] },
+        })
+      ).toContain('Population');
+      expect(
+        formatter?.({
+          name: 'Tokyo',
+          value: [100, 200],
+          data: { name: 'Tokyo', value: [100, 200] },
+        })
+      ).toContain('100');
+      expect(
+        formatter?.({
+          name: 'Tokyo',
+          value: [100, 200],
+          data: { name: 'Tokyo', value: [100, 200] },
+        })
+      ).toContain('200');
     });
   });
 
@@ -408,7 +523,7 @@ describe('EChartsRenderer', () => {
 
       await waitFor(() => {
         expect(mockRegisterMap).toHaveBeenCalledWith(
-          'japan',
+          'japan-prefecture',
           expect.objectContaining({
             type: 'FeatureCollection',
             features: [],
@@ -420,7 +535,7 @@ describe('EChartsRenderer', () => {
         expect(mockSetOption).toHaveBeenCalledWith(
           expect.objectContaining({
             series: expect.arrayContaining([
-              expect.objectContaining({ type: 'map', map: 'japan' }),
+              expect.objectContaining({ type: 'map', map: 'japan-prefecture' }),
             ]),
           }),
           true
@@ -444,6 +559,106 @@ describe('EChartsRenderer', () => {
           '/geojson/prefectures/13-tokyo.geojson'
         );
       });
+
+      await waitFor(() => {
+        expect(mockRegisterMap).toHaveBeenCalledWith(
+          'japan-municipality-13-tokyo',
+          expect.objectContaining({
+            type: 'FeatureCollection',
+            features: [],
+          })
+        );
+      });
+
+      await waitFor(() => {
+        expect(mockSetOption).toHaveBeenCalledWith(
+          expect.objectContaining({
+            series: expect.arrayContaining([
+              expect.objectContaining({
+                type: 'map',
+                map: 'japan-municipality-13-tokyo',
+              }),
+            ]),
+          }),
+          true
+        );
+      });
+    });
+
+    it('uses custom map color config when provided', async () => {
+      const mapJson = JSON.stringify({
+        type: 'map',
+        region: 'japan',
+        detail: 'prefecture',
+        min: -16,
+        max: 0,
+        colorStops: [
+          { offset: 1, color: '#0000ff' },
+          { offset: 0, color: '#ff0000' },
+          { offset: 0.5, color: '#00ff00' },
+        ],
+        data: [{ name: prefectureName, value: -8 }],
+      });
+
+      render(<EChartsRenderer rawJson={mapJson} />);
+
+      await waitFor(() => {
+        expect(mockSetOption).toHaveBeenCalledWith(
+          expect.objectContaining({
+            visualMap: expect.objectContaining({
+              min: -16,
+              max: 0,
+              inRange: expect.objectContaining({
+                color: ['#ff0000', '#00ff00', '#0000ff'],
+              }),
+            }),
+          }),
+          true
+        );
+      });
+    });
+
+    it('rejects invalid custom map color config', () => {
+      render(
+        <EChartsRenderer
+          rawJson={JSON.stringify({
+            type: 'map',
+            region: 'japan',
+            detail: 'prefecture',
+            min: -16,
+            max: 0,
+            colorStops: [
+              { offset: 0, color: '#ff0000' },
+              { offset: 2, color: '#00ff00' },
+            ],
+            data: [{ name: prefectureName, value: -8 }],
+          })}
+        />
+      );
+
+      expect(screen.getByText('chart.invalid_data')).toBeTruthy();
+      expect(mockInit).not.toHaveBeenCalled();
+      expect(mockSetOption).not.toHaveBeenCalled();
+    });
+
+    it('rejects malformed custom map color config objects', () => {
+      render(
+        <EChartsRenderer
+          rawJson={JSON.stringify({
+            type: 'map',
+            region: 'japan',
+            detail: 'prefecture',
+            min: -16,
+            max: 0,
+            colorStops: [{ offset: 0, color: '#ff0000' }, { color: '#00ff00' }],
+            data: [{ name: prefectureName, value: -8 }],
+          })}
+        />
+      );
+
+      expect(screen.getByText('chart.invalid_data')).toBeTruthy();
+      expect(mockInit).not.toHaveBeenCalled();
+      expect(mockSetOption).not.toHaveBeenCalled();
     });
 
     it('keeps the chart container mounted while GeoJSON is loading', async () => {
@@ -482,7 +697,7 @@ describe('EChartsRenderer', () => {
         expect(mockSetOption).toHaveBeenCalledWith(
           expect.objectContaining({
             series: expect.arrayContaining([
-              expect.objectContaining({ type: 'map', map: 'japan' }),
+              expect.objectContaining({ type: 'map', map: 'japan-prefecture' }),
             ]),
           }),
           true
@@ -516,6 +731,45 @@ describe('EChartsRenderer', () => {
         true
       );
     });
+  });
+
+  it('normalizes multi-series category charts by category name', async () => {
+    render(
+      <EChartsRenderer rawJson={JSON.stringify(reorderedMultiSeriesData)} />
+    );
+
+    await waitFor(() => {
+      expect(mockSetOption).toHaveBeenCalledWith(
+        expect.objectContaining({
+          xAxis: expect.objectContaining({ data: ['A', 'B', 'C', 'D'] }),
+          series: [
+            expect.objectContaining({
+              name: 'Series1',
+              type: 'line',
+              data: [10, 20, 30, null],
+            }),
+            expect.objectContaining({
+              name: 'Series2',
+              type: 'line',
+              data: [100, 200, null, 400],
+            }),
+          ],
+        }),
+        true
+      );
+    });
+  });
+
+  it('rejects ambiguous duplicate category names in a series', async () => {
+    render(
+      <EChartsRenderer rawJson={JSON.stringify(duplicateCategorySeriesData)} />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('chart.invalid_data')).toBeTruthy();
+    });
+
+    expect(mockSetOption).not.toHaveBeenCalled();
   });
 
   it('shows error for invalid JSON', () => {

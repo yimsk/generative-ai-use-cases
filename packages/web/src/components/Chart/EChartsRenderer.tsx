@@ -22,8 +22,11 @@ import type {
   CandlestickInput,
   CreateChartInput,
   HeatmapInput,
+  MapColorStop,
   MapInput,
   RadarInput,
+  ScatterDataPoint,
+  ScatterChartInput,
 } from './types';
 
 const COLORS = [
@@ -61,12 +64,14 @@ function ErrorDisplay({ rawJson }: { rawJson: string }) {
   );
 }
 
-function getCategoryData(input: BasicChartInput): string[] {
+function getCategoryData(input: BasicChartInput | ScatterChartInput): string[] {
   if (input.series && input.series.length > 0) {
-    return input.series[0].data.map((item) => item.name);
+    return input.series[0].data.map((item: { name: string }) => item.name);
   }
 
-  return input.data ? input.data.map((item) => item.name) : [];
+  return input.data
+    ? input.data.map((item: { name: string }) => item.name)
+    : [];
 }
 
 function buildAxisGrid(
@@ -80,20 +85,74 @@ function buildAxisGrid(
   };
 }
 
+function normalizeMultiSeriesCategoryData(series: BasicChartInput['series']) {
+  if (!series || series.length === 0) {
+    return null;
+  }
+
+  const categories: string[] = [];
+  const seenCategories = new Set<string>();
+
+  const valueMaps = series.map((entry) => {
+    const valueMap = new Map<string, number>();
+
+    entry.data.forEach((item) => {
+      if (valueMap.has(item.name)) {
+        throw new Error(
+          `Series "${entry.name}" has duplicate category name "${item.name}"`
+        );
+      }
+
+      valueMap.set(item.name, item.value);
+
+      if (!seenCategories.has(item.name)) {
+        seenCategories.add(item.name);
+        categories.push(item.name);
+      }
+    });
+
+    return valueMap;
+  });
+
+  return {
+    categories,
+    series: series.map((entry, index) => ({
+      name: entry.name,
+      data: categories.map(
+        (category) => valueMaps[index].get(category) ?? null
+      ),
+    })),
+  };
+}
+
 function buildCategorySeries(
   input: BasicChartInput,
   chartType: 'bar' | 'line',
+  normalizedMultiSeries?: ReturnType<typeof normalizeMultiSeriesCategoryData>,
   extra?: (series: { areaStyle?: object }) => void
 ) {
   const isMultiSeries = Array.isArray(input.series) && input.series.length > 0;
   const multiSeries = input.series ?? [];
+  if (isMultiSeries && normalizedMultiSeries) {
+    return normalizedMultiSeries.series.map(
+      (series: { name: string; data: Array<number | null> }) => {
+        const entry: Record<string, unknown> = {
+          name: series.name,
+          type: chartType,
+          data: series.data,
+        };
+        if (extra) extra(entry);
+        return entry;
+      }
+    );
+  }
 
   return isMultiSeries
     ? multiSeries.map((series) => {
         const entry: Record<string, unknown> = {
           name: series.name,
           type: chartType,
-          data: series.data.map((item) => item.value),
+          data: series.data.map((item: { value: number }) => item.value),
         };
         if (extra) extra(entry);
         return entry;
@@ -101,21 +160,86 @@ function buildCategorySeries(
     : (() => {
         const entry: Record<string, unknown> = {
           type: chartType,
-          data: input.data ? input.data.map((item) => item.value) : [],
+          data: input.data
+            ? input.data.map((item: { value: number }) => item.value)
+            : [],
         };
         if (extra) extra(entry);
         return [entry];
       })();
 }
 
-function buildBasicOption(input: BasicChartInput): echarts.EChartsOption {
+function buildScatterSeries(input: ScatterChartInput) {
   const isMultiSeries = Array.isArray(input.series) && input.series.length > 0;
-  const categoryData = getCategoryData(input);
+  const multiSeries = input.series ?? [];
+
+  return isMultiSeries
+    ? multiSeries.map((series) => ({
+        name: series.name,
+        type: 'scatter' as const,
+        data: series.data.map((item: ScatterDataPoint) => ({
+          name: item.name,
+          value: item.value,
+        })),
+      }))
+    : [
+        {
+          type: 'scatter' as const,
+          data: input.data.map((item: ScatterDataPoint) => ({
+            name: item.name,
+            value: item.value,
+          })),
+        },
+      ];
+}
+
+function getMapKey(
+  region: string,
+  detail?: string,
+  prefecture?: string
+): string {
+  if (region === 'world') {
+    return 'world';
+  }
+  if (detail === 'municipality' && prefecture) {
+    return `${region}-municipality-${prefecture}`;
+  }
+  if (detail === 'prefecture') {
+    return `${region}-prefecture`;
+  }
+  return region;
+}
+
+function buildMapColorStops(colorStops?: MapColorStop[]): string[] {
+  if (!colorStops || colorStops.length === 0) {
+    return ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4'];
+  }
+
+  return [...colorStops]
+    .sort((a, b) => a.offset - b.offset)
+    .map((stop) => stop.color);
+}
+
+function buildBasicOption(
+  input: BasicChartInput | ScatterChartInput
+): echarts.EChartsOption {
+  const isMultiSeries = Array.isArray(input.series) && input.series.length > 0;
+  const normalizedCategoryData =
+    input.type === 'bar' || input.type === 'line' || input.type === 'area'
+      ? normalizeMultiSeriesCategoryData(input.series)
+      : null;
+  const categoryData =
+    normalizedCategoryData?.categories ?? getCategoryData(input);
 
   const baseOption: echarts.EChartsOption = {
     color: COLORS,
     tooltip: {
-      trigger: isMultiSeries || input.type !== 'pie' ? 'axis' : 'item',
+      trigger:
+        input.type === 'scatter'
+          ? 'item'
+          : isMultiSeries || input.type !== 'pie'
+            ? 'axis'
+            : 'item',
     },
     legend: isMultiSeries ? { top: 24 } : undefined,
   };
@@ -131,7 +255,7 @@ function buildBasicOption(input: BasicChartInput): echarts.EChartsOption {
           name: input.xAxisLabel,
         },
         yAxis: { type: 'value', name: input.yAxisLabel },
-        series: buildCategorySeries(input, 'bar'),
+        series: buildCategorySeries(input, 'bar', normalizedCategoryData),
       };
 
     case 'line':
@@ -144,7 +268,7 @@ function buildBasicOption(input: BasicChartInput): echarts.EChartsOption {
           name: input.xAxisLabel,
         },
         yAxis: { type: 'value', name: input.yAxisLabel },
-        series: buildCategorySeries(input, 'line'),
+        series: buildCategorySeries(input, 'line', normalizedCategoryData),
       };
 
     case 'area':
@@ -157,9 +281,14 @@ function buildBasicOption(input: BasicChartInput): echarts.EChartsOption {
           name: input.xAxisLabel,
         },
         yAxis: { type: 'value', name: input.yAxisLabel },
-        series: buildCategorySeries(input, 'line', (e) => {
-          e.areaStyle = {};
-        }),
+        series: buildCategorySeries(
+          input,
+          'line',
+          normalizedCategoryData,
+          (e) => {
+            e.areaStyle = {};
+          }
+        ),
       };
 
     case 'pie':
@@ -170,21 +299,33 @@ function buildBasicOption(input: BasicChartInput): echarts.EChartsOption {
           ? { top: 24 }
           : { orient: 'vertical', left: 'left' },
         series: isMultiSeries
-          ? (input.series ?? []).map((series) => ({
-              name: series.name,
-              type: 'pie' as const,
-              radius: '50%',
-              data: series.data.map((item) => ({
-                name: item.name,
-                value: item.value,
-              })),
-            }))
+          ? (input.series ?? []).map((series, index) => {
+              const radii: [string, string][] = [
+                ['0%', '40%'],
+                ['45%', '70%'],
+                ['75%', '90%'],
+              ];
+              const radius = radii[index] || ['75%', '90%'];
+
+              return {
+                name: series.name,
+                type: 'pie' as const,
+                radius,
+                center: ['50%', '50%'],
+                data: series.data.map(
+                  (item: { name: string; value: number }) => ({
+                    name: item.name,
+                    value: item.value,
+                  })
+                ),
+              };
+            })
           : [
               {
                 type: 'pie' as const,
                 radius: '50%',
                 data: input.data
-                  ? input.data.map((item) => ({
+                  ? input.data.map((item: { name: string; value: number }) => ({
                       name: item.name,
                       value: item.value,
                     }))
@@ -194,25 +335,20 @@ function buildBasicOption(input: BasicChartInput): echarts.EChartsOption {
       };
 
     case 'scatter':
+      if (input.type !== 'scatter') {
+        return baseOption;
+      }
       return {
-        ...baseOption,
+        color: COLORS,
+        tooltip: {
+          trigger: 'item',
+          formatter: buildScatterTooltipFormatter(input),
+        },
+        legend: isMultiSeries ? { top: 24 } : undefined,
         grid: buildAxisGrid(isMultiSeries, input.xAxisLabel),
         xAxis: { type: 'value', name: input.xAxisLabel },
         yAxis: { type: 'value', name: input.yAxisLabel },
-        series: isMultiSeries
-          ? (input.series ?? []).map((series) => ({
-              name: series.name,
-              type: 'scatter' as const,
-              data: series.data.map((item) => [item.value, item.value]),
-            }))
-          : [
-              {
-                type: 'scatter' as const,
-                data: input.data
-                  ? input.data.map((item) => [item.value, item.value])
-                  : [],
-              },
-            ],
+        series: buildScatterSeries(input),
       };
   }
 }
@@ -233,6 +369,34 @@ function buildBoxplotOption(input: BoxplotInput): echarts.EChartsOption {
         data: input.data,
       },
     ],
+  };
+}
+
+function buildScatterTooltipFormatter(
+  input: ScatterChartInput
+): TooltipFormatter {
+  const xLabel = input.xAxisLabel ?? 'x';
+  const yLabel = input.yAxisLabel ?? 'y';
+
+  return (params) => {
+    const target = Array.isArray(params) ? params[0] : params;
+    const datum = target as {
+      name?: string;
+      value?: number | [number, number];
+      data?: { name?: string; value?: number | [number, number] };
+    };
+    const point = datum.data ?? datum;
+    const name = point.name ?? datum.name;
+    const value = point.value ?? datum.value;
+
+    if (Array.isArray(value)) {
+      const [x, y] = value;
+      return [name, `${xLabel}: ${x}`, `${yLabel}: ${y}`]
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    return [name, `${yLabel}: ${value ?? '-'}`].filter(Boolean).join('\n');
   };
 }
 
@@ -313,8 +477,9 @@ type MapTooltipFormatterParam =
 
 function buildMapOption(mapData: MapInput): echarts.EChartsOption {
   const values = mapData.data.map((datum) => datum.value);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
+  const minValue = mapData.min ?? Math.min(...values);
+  const maxValue = mapData.max ?? Math.max(...values);
+  const colorStops = buildMapColorStops(mapData.colorStops);
 
   return {
     tooltip: {
@@ -337,13 +502,13 @@ function buildMapOption(mapData: MapInput): echarts.EChartsOption {
       realtime: false,
       calculable: true,
       inRange: {
-        color: ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4'],
+        color: colorStops,
       },
     },
     series: [
       {
         type: 'map',
-        map: mapData.region,
+        map: getMapKey(mapData.region, mapData.detail, mapData.prefecture),
         data: mapData.data,
         roam: true,
         zoom: 1.2,
@@ -416,8 +581,13 @@ function resolveOption(
       return buildRadarOption(validated.data as RadarInput);
     case 'candlestick':
       return buildCandlestickOption(validated.data as CandlestickInput);
-    default:
+    case 'map':
+      return buildMapOption(validated.data as MapInput);
+    default: {
+      const _exhaustive: never = validated;
+      void _exhaustive;
       return null;
+    }
   }
 }
 
@@ -432,6 +602,7 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
   const resizeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [chartReady, setChartReady] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
 
   const hasRenderableDimensions = useCallback(() => {
     const container = containerRef.current;
@@ -571,21 +742,29 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
 
     let option: echarts.EChartsOption;
 
-    if (mapData && !geoLoading && geoJson) {
-      option = buildMapOption(mapData);
+    setRenderError(null);
+
+    try {
+      if (mapData && !geoLoading && geoJson) {
+        option = buildMapOption(mapData);
+        chartRef.current.setOption(option, true);
+        scheduleResize();
+        return;
+      }
+
+      const resolved = resolveOption(validated);
+      if (!resolved) {
+        return;
+      }
+
+      option = resolved;
       chartRef.current.setOption(option, true);
       scheduleResize();
-      return;
+    } catch (error) {
+      setRenderError(
+        error instanceof Error ? error.message : 'Failed to render chart'
+      );
     }
-
-    const resolved = resolveOption(validated);
-    if (!resolved) {
-      return;
-    }
-
-    option = resolved;
-    chartRef.current.setOption(option, true);
-    scheduleResize();
   }, [
     chartReady,
     geoJson,
@@ -598,6 +777,10 @@ const EChartsRenderer: React.FC<EChartsRendererProps> = ({
   ]);
 
   if (parsed.error !== null) {
+    return <ErrorDisplay rawJson={rawJson} />;
+  }
+
+  if (renderError) {
     return <ErrorDisplay rawJson={rawJson} />;
   }
 
