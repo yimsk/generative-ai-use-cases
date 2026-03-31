@@ -47,6 +47,29 @@ Or with multiple series:
 }
 ```
 
+For scatter charts, `value` may be either a single numeric value or an `[x, y]` tuple.
+
+```json
+{
+  "type": "scatter",
+  "title": "Experiment Results",
+  "data": [
+    { "name": "Sample A", "value": [10, 20] },
+    { "name": "Sample B", "value": 15 }
+  ],
+  "xAxisLabel": "Input",
+  "yAxisLabel": "Output"
+}
+```
+
+Scatter charts keep the plotted view clean and do not show point labels by default. Tooltips handle point detail instead:
+
+- Point names are shown by default when available.
+- Tuple data shows the point name plus labeled `xAxisLabel` and `yAxisLabel` values.
+- Scalar data keeps a simpler tooltip with the point name and y-axis value.
+
+There is no scatter tooltip or label customization API. Use the current input shape only.
+
 ### Boxplot (箱ひげ図)
 
 ```json
@@ -77,6 +100,7 @@ Data format: `[min, Q1, median, Q3, max]` for each box.
 ```
 
 Data format: `[xIndex, yIndex, value]` tuples.
+`xIndex` and `yIndex` must be finite integers within the bounds of `xLabels` and `yLabels`.
 
 ### Radar (レーダーチャート)
 
@@ -123,6 +147,30 @@ Data format: `[open, close, lowest, highest]` for each candle.
 }
 ```
 
+Optional color scale customization:
+
+```json
+{
+  "type": "map",
+  "title": "Population Change Rate by Prefecture",
+  "region": "japan",
+  "detail": "prefecture",
+  "min": -16,
+  "max": 0,
+  "colorStops": [
+    { "offset": 0, "color": "#8B0000" },
+    { "offset": 0.3, "color": "#DC143C" },
+    { "offset": 0.5, "color": "#FF6347" },
+    { "offset": 0.7, "color": "#FFA07A" },
+    { "offset": 1, "color": "#FFE4B5" }
+  ],
+  "data": [
+    { "name": "秋田県", "value": -15.3 },
+    { "name": "東京都", "value": -3.8 }
+  ]
+}
+```
+
 For municipality detail:
 
 ```json
@@ -147,14 +195,17 @@ Prefecture codes: 01-hokkaido, 13-tokyo, 27-osaka, etc.
 | series     | array  | Conditional | Multi-series data (basic charts)                                                     |
 | xAxisLabel | string | No          | X-axis label (basic charts)                                                          |
 | yAxisLabel | string | No          | Y-axis label (basic charts)                                                          |
-| labels     | array  | No          | Category labels (boxplot)                                                            |
-| xLabels    | array  | Yes\*       | X categories (heatmap)                                                               |
-| yLabels    | array  | Yes\*       | Y categories (heatmap)                                                               |
+| labels     | array  | No          | Category labels (boxplot, string array)                                              |
+| xLabels    | array  | Yes\*       | X categories (heatmap, string array)                                                 |
+| yLabels    | array  | Yes\*       | Y categories (heatmap, string array)                                                 |
 | indicators | array  | Yes\*       | Radar indicators [{name, max}]                                                       |
-| dates      | array  | No          | Date labels (candlestick)                                                            |
+| dates      | array  | No          | Date labels (candlestick, string array)                                              |
 | region     | string | Yes\*       | Map region: "japan" or "world"                                                       |
 | detail     | string | No          | Map detail: "prefecture" or "municipality"                                           |
 | prefecture | string | Conditional | Required when detail="municipality"                                                  |
+| min        | number | No          | Map visual scale minimum. Defaults to the minimum value in `data`.                   |
+| max        | number | No          | Map visual scale maximum. Defaults to the maximum value in `data`.                   |
+| colorStops | array  | No          | Map gradient stops as `[{ offset, color }]`, where `offset` is between 0 and 1.      |
 
 \*Required for specific chart types
 
@@ -174,4 +225,8 @@ The chart itself is rendered by the frontend from the tool input payload.
 - The frontend detects tool use events where `name="createChart"` and renders the payload with ECharts.
 - Supported chart types include basic charts, statistical visualizations, and geographic maps.
 - Invalid or malformed chart data shows an error message in the UI instead of crashing.
+- For `bar`, `line`, and `area`, multi-series data is aligned by category name; missing categories render as gaps.
+- For `pie` and `scatter`, multi-series inputs may have unequal lengths.
+- Scatter point `name` metadata is preserved in the rendered payload and surfaced in default tooltips.
 - Geographic data is loaded dynamically from GeoJSON files for optimal performance.
+- Map charts support optional custom color scales via `min`, `max`, and `colorStops`.
