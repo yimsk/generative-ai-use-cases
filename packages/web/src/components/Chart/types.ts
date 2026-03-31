@@ -15,6 +15,16 @@ export interface ChartDataPoint {
   value: number;
 }
 
+export interface ScatterDataPoint {
+  name: string;
+  value: number | [number, number];
+}
+
+export interface ScatterChartSeries {
+  name: string;
+  data: ScatterDataPoint[];
+}
+
 export interface ChartSeries {
   name: string;
   data: ChartDataPoint[];
@@ -26,9 +36,17 @@ export interface ChartInputBase {
 }
 
 export interface BasicChartInput extends ChartInputBase {
-  type: 'bar' | 'line' | 'pie' | 'area' | 'scatter';
+  type: 'bar' | 'line' | 'pie' | 'area';
   data?: ChartDataPoint[];
   series?: ChartSeries[];
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+}
+
+export interface ScatterChartInput extends ChartInputBase {
+  type: 'scatter';
+  data: ScatterDataPoint[];
+  series?: ScatterChartSeries[];
   xAxisLabel?: string;
   yAxisLabel?: string;
 }
@@ -58,16 +76,25 @@ export interface CandlestickInput extends ChartInputBase {
   dates?: string[];
 }
 
+export interface MapColorStop {
+  offset: number;
+  color: string;
+}
+
 export interface MapInput extends ChartInputBase {
   type: 'map';
   region: 'japan' | 'world';
   detail?: 'prefecture' | 'municipality';
   prefecture?: string;
+  min?: number;
+  max?: number;
+  colorStops?: MapColorStop[];
   data: { name: string; value: number }[];
 }
 
 type ChartInputUnion =
   | BasicChartInput
+  | ScatterChartInput
   | BoxplotInput
   | HeatmapInput
   | RadarInput

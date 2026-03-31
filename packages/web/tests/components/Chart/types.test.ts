@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { createElement } from 'react';
+import { render, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import EChartsRenderer from '../../../src/components/Chart/EChartsRenderer';
 import {
   isValidChartData,
   validateBasicChart,
@@ -18,7 +21,68 @@ import {
   type HeatmapInput,
   type MapInput,
   type RadarInput,
+  type ScatterChartInput,
 } from '../../../src/components/Chart/types';
+
+const { mockSetOption, mockInit } = vi.hoisted(() => {
+  const setOption = vi.fn();
+  const init = vi.fn(() => ({
+    setOption,
+    resize: vi.fn(),
+    dispose: vi.fn(),
+    getDataURL: vi.fn(),
+  }));
+
+  return { mockSetOption: setOption, mockInit: init };
+});
+
+vi.mock('echarts', () => ({
+  init: mockInit,
+}));
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
+const originalFetch = global.fetch;
+const scalarScatterJson = JSON.stringify({
+  type: 'scatter',
+  data: [
+    { name: 'A', value: 10 },
+    { name: 'B', value: 20 },
+    { name: 'C', value: 30 },
+  ],
+});
+
+let getBoundingClientRectSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  getBoundingClientRectSpy = vi
+    .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+    .mockImplementation(
+      () =>
+        ({
+          width: 640,
+          height: 300,
+          top: 0,
+          right: 640,
+          bottom: 300,
+          left: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        }) as DOMRect
+    );
+  mockSetOption.mockClear();
+  mockInit.mockClear();
+});
+
+afterEach(() => {
+  getBoundingClientRectSpy.mockRestore();
+  global.fetch = originalFetch;
+});
 
 describe('chart types', () => {
   it('supports all chart type literals', () => {
@@ -54,12 +118,83 @@ describe('validateBasicChart', () => {
     series: [{ name: 'Series 1', data: [{ name: 'A', value: 1 }] }],
   };
 
+  const validScatterChart: ScatterChartInput = {
+    type: 'scatter',
+    data: [{ name: 'A', value: [1, 2] }],
+  };
+
   it('accepts valid chart data', () => {
     expect(validateBasicChart(validDataChart)).toBe(true);
   });
 
   it('accepts valid chart series', () => {
     expect(validateBasicChart(validSeriesChart)).toBe(true);
+  });
+
+  it('accepts valid scatter data', () => {
+    expect(validateBasicChart(validScatterChart)).toBe(true);
+  });
+
+  it('accepts scatter with scalar values', () => {
+    expect(
+      validateBasicChart({
+        type: 'scatter',
+        data: [{ name: 'A', value: 10 }],
+      })
+    ).toBe(true);
+  });
+
+  it('accepts multi-series scatter with mixed scalar and tuple values', () => {
+    expect(
+      validateBasicChart({
+        type: 'scatter',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: 10 },
+              { name: 'B', value: [1, 2] },
+            ],
+          },
+          { name: 'Series 2', data: [{ name: 'C', value: 20 }] },
+        ],
+      })
+    ).toBe(true);
+  });
+
+  it('preserves scalar scatter payloads through validation and option generation', async () => {
+    expect(
+      validateBasicChart({
+        type: 'scatter',
+        data: [
+          { name: 'A', value: 10 },
+          { name: 'B', value: 20 },
+          { name: 'C', value: 30 },
+        ],
+      })
+    ).toBe(true);
+
+    expect(() =>
+      render(createElement(EChartsRenderer, { rawJson: scalarScatterJson }))
+    ).not.toThrow();
+
+    await waitFor(() => {
+      expect(mockSetOption).toHaveBeenCalledWith(
+        expect.objectContaining({
+          series: [
+            expect.objectContaining({
+              type: 'scatter',
+              data: [
+                { name: 'A', value: 10 },
+                { name: 'B', value: 20 },
+                { name: 'C', value: 30 },
+              ],
+            }),
+          ],
+        }),
+        true
+      );
+    });
   });
 
   it('rejects charts without data and series', () => {
@@ -92,6 +227,147 @@ describe('validateBasicChart', () => {
       })
     ).toBe(false);
   });
+
+  it('accepts unequal-length multi-series pie', () => {
+    expect(
+      validateBasicChart({
+        type: 'pie',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: 1 },
+              { name: 'B', value: 2 },
+            ],
+          },
+          { name: 'Series 2', data: [{ name: 'C', value: 3 }] },
+        ],
+      })
+    ).toBe(true);
+  });
+
+  it('accepts unequal-length multi-series scatter', () => {
+    expect(
+      validateBasicChart({
+        type: 'scatter',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: [1, 2] },
+              { name: 'B', value: [3, 4] },
+            ],
+          },
+          { name: 'Series 2', data: [{ name: 'C', value: [5, 6] }] },
+        ],
+      })
+    ).toBe(true);
+  });
+
+  it('rejects unequal-length multi-series bar', () => {
+    expect(
+      validateBasicChart({
+        type: 'bar',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: 1 },
+              { name: 'B', value: 2 },
+            ],
+          },
+          { name: 'Series 2', data: [{ name: 'C', value: 3 }] },
+        ],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects unequal-length multi-series line', () => {
+    expect(
+      validateBasicChart({
+        type: 'line',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: 1 },
+              { name: 'B', value: 2 },
+            ],
+          },
+          { name: 'Series 2', data: [{ name: 'C', value: 3 }] },
+        ],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects unequal-length multi-series area', () => {
+    expect(
+      validateBasicChart({
+        type: 'area',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: 1 },
+              { name: 'B', value: 2 },
+            ],
+          },
+          { name: 'Series 2', data: [{ name: 'C', value: 3 }] },
+        ],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects duplicate category names in bar series', () => {
+    expect(
+      validateBasicChart({
+        type: 'bar',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: 1 },
+              { name: 'A', value: 2 },
+            ],
+          },
+        ],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects duplicate category names in line series', () => {
+    expect(
+      validateBasicChart({
+        type: 'line',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: 1 },
+              { name: 'A', value: 2 },
+            ],
+          },
+        ],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects duplicate category names in area series', () => {
+    expect(
+      validateBasicChart({
+        type: 'area',
+        series: [
+          {
+            name: 'Series 1',
+            data: [
+              { name: 'A', value: 1 },
+              { name: 'A', value: 2 },
+            ],
+          },
+        ],
+      })
+    ).toBe(false);
+  });
 });
 
 describe('validateBoxplot', () => {
@@ -119,6 +395,45 @@ describe('validateBoxplot', () => {
       validateBoxplot({
         type: 'boxplot',
         data: [[1, 2, 3, 4, '5']],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects NaN values', () => {
+    expect(
+      validateBoxplot({
+        type: 'boxplot',
+        data: [[Number.NaN, 1, 2, 3, 4]],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects labels length mismatch', () => {
+    expect(
+      validateBoxplot({
+        type: 'boxplot',
+        data: [[1, 2, 3, 4, 5]],
+        labels: [],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects non-string labels array', () => {
+    expect(
+      validateBoxplot({
+        type: 'boxplot',
+        data: [[1, 2, 3, 4, 5]],
+        labels: [1, 2, 3, 4, 5],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects labels with mixed types', () => {
+    expect(
+      validateBoxplot({
+        type: 'boxplot',
+        data: [[1, 2, 3, 4, 5]],
+        labels: ['A', 'B', 'C', 4, 'E'],
       })
     ).toBe(false);
   });
@@ -175,6 +490,50 @@ describe('validateHeatmap', () => {
       })
     ).toBe(false);
   });
+
+  it('rejects non-integer x index', () => {
+    expect(
+      validateHeatmap({
+        type: 'heatmap',
+        xLabels: ['Mon', 'Tue'],
+        yLabels: ['AM', 'PM'],
+        data: [[0.5, 0, 42]],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects non-integer y index', () => {
+    expect(
+      validateHeatmap({
+        type: 'heatmap',
+        xLabels: ['Mon', 'Tue'],
+        yLabels: ['AM', 'PM'],
+        data: [[0, 1.5, 42]],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects NaN index', () => {
+    expect(
+      validateHeatmap({
+        type: 'heatmap',
+        xLabels: ['Mon'],
+        yLabels: ['AM'],
+        data: [[Number.NaN, 0, 42]],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects Infinity index', () => {
+    expect(
+      validateHeatmap({
+        type: 'heatmap',
+        xLabels: ['Mon'],
+        yLabels: ['AM'],
+        data: [[Number.POSITIVE_INFINITY, 0, 42]],
+      })
+    ).toBe(false);
+  });
 });
 
 describe('validateRadar', () => {
@@ -222,6 +581,16 @@ describe('validateRadar', () => {
       })
     ).toBe(false);
   });
+
+  it('rejects indicator and value length mismatch', () => {
+    expect(
+      validateRadar({
+        type: 'radar',
+        indicators: [{ name: 'A', max: 10 }],
+        data: [{ name: 'B', value: [1, 2] }],
+      })
+    ).toBe(false);
+  });
 });
 
 describe('validateCandlestick', () => {
@@ -249,6 +618,45 @@ describe('validateCandlestick', () => {
       validateCandlestick({
         type: 'candlestick',
         data: [[10, 12, 9, '13']],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects Infinity values', () => {
+    expect(
+      validateCandlestick({
+        type: 'candlestick',
+        data: [[1, 2, 3, Number.POSITIVE_INFINITY]],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects dates length mismatch', () => {
+    expect(
+      validateCandlestick({
+        type: 'candlestick',
+        data: [[1, 2, 3, 4]],
+        dates: [],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects non-string dates array', () => {
+    expect(
+      validateCandlestick({
+        type: 'candlestick',
+        data: [[1, 2, 3, 4]],
+        dates: [1, 2, 3, 4],
+      })
+    ).toBe(false);
+  });
+
+  it('rejects dates with mixed types', () => {
+    expect(
+      validateCandlestick({
+        type: 'candlestick',
+        data: [[1, 2, 3, 4]],
+        dates: ['2024-01-01', '2024-01-02', 123, '2024-01-04'],
       })
     ).toBe(false);
   });
@@ -314,6 +722,17 @@ describe('validateMap', () => {
       })
     ).toBe(true);
   });
+
+  it('rejects world municipality detail', () => {
+    expect(
+      validateMap({
+        type: 'map',
+        region: 'world',
+        detail: 'municipality',
+        data: [],
+      })
+    ).toBe(false);
+  });
 });
 
 describe('isValidChartData', () => {
@@ -326,7 +745,7 @@ describe('isValidChartData', () => {
       },
       { type: 'pie', data: [{ name: 'A', value: 1 }] },
       { type: 'area', data: [{ name: 'A', value: 1 }] },
-      { type: 'scatter', data: [{ name: 'A', value: 1 }] },
+      { type: 'scatter', data: [{ name: 'A', value: [1, 2] }] },
       { type: 'boxplot', data: [[1, 2, 3, 4, 5]] },
       { type: 'heatmap', xLabels: ['X'], yLabels: ['Y'], data: [[0, 0, 1]] },
       {

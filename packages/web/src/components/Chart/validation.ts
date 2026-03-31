@@ -5,23 +5,70 @@ import type {
   ChartType,
   CreateChartInput,
   HeatmapInput,
+  MapColorStop,
   MapInput,
   RadarInput,
+  ScatterChartInput,
+  ScatterDataPoint,
 } from './types';
 
 function isRecord(input: unknown): input is Record<string, unknown> {
   return typeof input === 'object' && input !== null;
 }
 
-function isValidDataPoint(input: unknown): boolean {
-  if (!isRecord(input)) return false;
-  return typeof input.name === 'string' && typeof input.value === 'number';
+function isValidNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
-export function validateBasicChart(input: unknown): input is BasicChartInput {
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === 'string')
+  );
+}
+
+function isValidMapColorStop(value: unknown): value is MapColorStop {
+  if (!isRecord(value)) return false;
+  const offset: unknown = value.offset;
+  if (!isValidNumber(offset)) return false;
+  if (offset < 0 || offset > 1) return false;
+  return typeof value.color === 'string' && value.color.length > 0;
+}
+
+function isValidColorStops(value: unknown): value is MapColorStop[] {
+  return (
+    Array.isArray(value) && value.length > 0 && value.every(isValidMapColorStop)
+  );
+}
+
+function isValidDataPoint(input: unknown): boolean {
+  if (!isRecord(input)) return false;
+  return typeof input.name === 'string' && isValidNumber(input.value);
+}
+
+function isValidScatterDataPoint(input: unknown): input is ScatterDataPoint {
+  if (!isRecord(input)) return false;
+  if (typeof input.name !== 'string') return false;
+
+  const value = input.value;
+  if (isValidNumber(value)) {
+    return true;
+  }
+  if (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    value.every(isValidNumber)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function validateBasicChart(
+  input: unknown
+): input is BasicChartInput | ScatterChartInput {
   if (!isRecord(input)) return false;
 
-  const validTypes: BasicChartInput['type'][] = [
+  const validTypes: (BasicChartInput['type'] | ScatterChartInput['type'])[] = [
     'bar',
     'line',
     'pie',
@@ -38,18 +85,48 @@ export function validateBasicChart(input: unknown): input is BasicChartInput {
 
   if (hasData) {
     for (const item of input.data as unknown[]) {
-      if (!isValidDataPoint(item)) return false;
+      if (
+        input.type === 'scatter'
+          ? !isValidScatterDataPoint(item)
+          : !isValidDataPoint(item)
+      ) {
+        return false;
+      }
     }
   }
 
   if (hasSeries) {
-    for (const item of input.series as unknown[]) {
+    const seriesArray = input.series as unknown[];
+    const firstSeriesLength = (seriesArray[0] as { data: unknown[] }).data
+      .length;
+    const needsEqualLength =
+      input.type === 'bar' || input.type === 'line' || input.type === 'area';
+
+    for (const item of seriesArray) {
       if (!isRecord(item)) return false;
       if (typeof item.name !== 'string' || !Array.isArray(item.data))
         return false;
+      if (needsEqualLength && item.data.length !== firstSeriesLength)
+        return false;
+
+      if (needsEqualLength) {
+        const categoryNames = new Set<string>();
+        for (const point of item.data as unknown[]) {
+          if (isRecord(point) && typeof point.name === 'string') {
+            if (categoryNames.has(point.name)) return false;
+            categoryNames.add(point.name);
+          }
+        }
+      }
 
       for (const point of item.data) {
-        if (!isValidDataPoint(point)) return false;
+        if (
+          input.type === 'scatter'
+            ? !isValidScatterDataPoint(point)
+            : !isValidDataPoint(point)
+        ) {
+          return false;
+        }
       }
     }
   }
@@ -61,10 +138,15 @@ export function validateBoxplot(input: unknown): input is BoxplotInput {
   if (!isRecord(input) || input.type !== 'boxplot') return false;
   if (!Array.isArray(input.data) || input.data.length === 0) return false;
 
+  if (input.labels !== undefined) {
+    if (!isStringArray(input.labels)) return false;
+    if (input.labels.length !== input.data.length) return false;
+  }
+
   for (const item of input.data as unknown[]) {
     if (!Array.isArray(item) || item.length !== 5) return false;
     for (const value of item) {
-      if (typeof value !== 'number') return false;
+      if (!isValidNumber(value)) return false;
     }
   }
 
@@ -80,11 +162,10 @@ export function validateHeatmap(input: unknown): input is HeatmapInput {
   for (const item of input.data as unknown[]) {
     if (!Array.isArray(item) || item.length !== 3) return false;
     for (const value of item) {
-      if (typeof value !== 'number') return false;
+      if (!isValidNumber(value)) return false;
     }
-  }
-
-  for (const [xIndex, yIndex] of input.data as [number, number, number][]) {
+    const [xIndex, yIndex] = item as [number, number, number];
+    if (!Number.isInteger(xIndex) || !Number.isInteger(yIndex)) return false;
     if (xIndex < 0 || xIndex >= input.xLabels.length) return false;
     if (yIndex < 0 || yIndex >= input.yLabels.length) return false;
   }
@@ -100,21 +181,20 @@ export function validateRadar(input: unknown): input is RadarInput {
 
   for (const indicator of input.indicators as unknown[]) {
     if (!isRecord(indicator)) return false;
-    if (
-      typeof indicator.name !== 'string' ||
-      typeof indicator.max !== 'number'
-    ) {
+    if (typeof indicator.name !== 'string' || !isValidNumber(indicator.max)) {
       return false;
     }
   }
 
+  const indicatorCount = input.indicators.length;
   for (const item of input.data as unknown[]) {
     if (!isRecord(item)) return false;
     if (typeof item.name !== 'string' || !Array.isArray(item.value))
       return false;
+    if (item.value.length !== indicatorCount) return false;
 
     for (const value of item.value) {
-      if (typeof value !== 'number') return false;
+      if (!isValidNumber(value)) return false;
     }
   }
 
@@ -125,10 +205,15 @@ export function validateCandlestick(input: unknown): input is CandlestickInput {
   if (!isRecord(input) || input.type !== 'candlestick') return false;
   if (!Array.isArray(input.data) || input.data.length === 0) return false;
 
+  if (input.dates !== undefined) {
+    if (!isStringArray(input.dates)) return false;
+    if (input.dates.length !== input.data.length) return false;
+  }
+
   for (const item of input.data as unknown[]) {
     if (!Array.isArray(item) || item.length !== 4) return false;
     for (const value of item) {
-      if (typeof value !== 'number') return false;
+      if (!isValidNumber(value)) return false;
     }
   }
 
@@ -138,6 +223,17 @@ export function validateCandlestick(input: unknown): input is CandlestickInput {
 export function validateMap(input: unknown): input is MapInput {
   if (!isRecord(input) || input.type !== 'map') return false;
   if (input.region !== 'japan' && input.region !== 'world') return false;
+  if (input.region === 'world' && input.detail === 'municipality') {
+    return false;
+  }
+  if (input.min != null && !isValidNumber(input.min)) return false;
+  if (input.max != null && !isValidNumber(input.max)) return false;
+  if (input.min != null && input.max != null && input.min >= input.max) {
+    return false;
+  }
+  if (input.colorStops != null && !isValidColorStops(input.colorStops)) {
+    return false;
+  }
   if (!Array.isArray(input.data) || input.data.length === 0) return false;
 
   for (const item of input.data as unknown[]) {
