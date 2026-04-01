@@ -3,17 +3,62 @@ import { modelMetadata } from '@generative-ai-use-cases/common';
 
 // Default Models
 
-const modelIds: ModelConfiguration[] = (
-  JSON.parse(process.env.MODEL_IDS || '[]') as ModelConfiguration[]
-)
-  .map((model) => ({
-    modelId: model.modelId.trim(),
-    region: model.region.trim(),
-    ...(model.inferenceProfileArn && {
-      inferenceProfileArn: model.inferenceProfileArn,
-    }),
-  }))
-  .filter((model) => model.modelId);
+const parseRequiredModelConfigurations = (
+  envVarName: string,
+  expectedFlag?: 'text' | 'image_gen' | 'video_gen'
+): ModelConfiguration[] => {
+  const rawValue = process.env[envVarName];
+  if (!rawValue || rawValue.trim() === '') {
+    throw new Error(`${envVarName} is required and cannot be empty`);
+  }
+
+  const parsed = JSON.parse(rawValue) as ModelConfiguration[];
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error(`${envVarName} must contain at least one model config`);
+  }
+
+  return parsed.map((model, index) => {
+    const modelId = model.modelId.trim();
+    const region = model.region.trim();
+    const inferenceProfileArn = model.inferenceProfileArn?.trim();
+
+    if (!modelId) {
+      throw new Error(`${envVarName}[${index}].modelId cannot be empty`);
+    }
+    if (!region) {
+      throw new Error(`${envVarName}[${index}].region cannot be empty`);
+    }
+
+    const metadata = modelMetadata[modelId];
+    if (!metadata) {
+      throw new Error(
+        `${envVarName}[${index}].modelId is unsupported: ${modelId}`
+      );
+    }
+    if (expectedFlag && !metadata.flags[expectedFlag]) {
+      throw new Error(
+        `${envVarName}[${index}].modelId is not a ${expectedFlag} model: ${modelId}`
+      );
+    }
+
+    if (model.inferenceProfileArn && !inferenceProfileArn) {
+      throw new Error(
+        `${envVarName}[${index}].inferenceProfileArn cannot be empty`
+      );
+    }
+
+    return {
+      modelId,
+      region,
+      ...(inferenceProfileArn && { inferenceProfileArn }),
+    };
+  });
+};
+
+const modelIds: ModelConfiguration[] = parseRequiredModelConfigurations(
+  'MODEL_IDS',
+  'text'
+);
 // If there is a lightweight model among the available models, prioritize the lightweight model.
 const lightWeightModelIds = modelIds.filter(
   (model: ModelConfiguration) => modelMetadata[model.modelId].flags.light
@@ -28,50 +73,24 @@ export const defaultModel: Model = {
   }),
 };
 
-const imageGenerationModels: ModelConfiguration[] = (
-  JSON.parse(
-    process.env.IMAGE_GENERATION_MODEL_IDS || '[]'
-  ) as ModelConfiguration[]
-)
-  .map(
-    (model: ModelConfiguration): ModelConfiguration => ({
-      modelId: model.modelId.trim(),
-      region: model.region.trim(),
-      ...(model.inferenceProfileArn && {
-        inferenceProfileArn: model.inferenceProfileArn,
-      }),
-    })
-  )
-  .filter((model) => model.modelId);
+const imageGenerationModels: ModelConfiguration[] =
+  parseRequiredModelConfigurations('IMAGE_GENERATION_MODEL_IDS', 'image_gen');
 export const defaultImageGenerationModel: Model = {
   type: 'bedrock',
-  modelId: imageGenerationModels?.[0]?.modelId ?? '',
-  region: imageGenerationModels?.[0]?.region ?? '',
-  ...(imageGenerationModels?.[0]?.inferenceProfileArn && {
+  modelId: imageGenerationModels[0].modelId,
+  region: imageGenerationModels[0].region,
+  ...(imageGenerationModels[0].inferenceProfileArn && {
     inferenceProfileArn: imageGenerationModels[0].inferenceProfileArn,
   }),
 };
 
-const videoGenerationModels: ModelConfiguration[] = (
-  JSON.parse(
-    process.env.VIDEO_GENERATION_MODEL_IDS || '[]'
-  ) as ModelConfiguration[]
-)
-  .map(
-    (model: ModelConfiguration): ModelConfiguration => ({
-      modelId: model.modelId.trim(),
-      region: model.region.trim(),
-      ...(model.inferenceProfileArn && {
-        inferenceProfileArn: model.inferenceProfileArn,
-      }),
-    })
-  )
-  .filter((model) => model.modelId);
+const videoGenerationModels: ModelConfiguration[] =
+  parseRequiredModelConfigurations('VIDEO_GENERATION_MODEL_IDS', 'video_gen');
 export const defaultVideoGenerationModel: Model = {
   type: 'bedrock',
-  modelId: videoGenerationModels?.[0]?.modelId ?? '',
-  region: videoGenerationModels?.[0]?.region ?? '',
-  ...(videoGenerationModels?.[0]?.inferenceProfileArn && {
+  modelId: videoGenerationModels[0].modelId,
+  region: videoGenerationModels[0].region,
+  ...(videoGenerationModels[0].inferenceProfileArn && {
     inferenceProfileArn: videoGenerationModels[0].inferenceProfileArn,
   }),
 };

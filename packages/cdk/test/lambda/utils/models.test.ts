@@ -6,10 +6,17 @@ import type {
   BedrockImageGenerationResponse,
   GenerateImageParams,
 } from 'generative-ai-use-cases';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
 
 type ModelsModule = typeof import('../../../lambda/utils/models');
 
 const originalEnv = process.env;
+const modelsModulePath = resolve(
+  __dirname,
+  '../../../lambda/utils/models/index.ts'
+);
 
 const baseEnv = {
   MODEL_IDS: JSON.stringify([
@@ -45,31 +52,42 @@ const baseEnv = {
 const loadModelsModule = (
   envOverrides: Partial<NodeJS.ProcessEnv> = {}
 ): Promise<ModelsModule> => {
-  jest.resetModules();
   process.env = {
     ...originalEnv,
     ...baseEnv,
     ...envOverrides,
   };
 
-  let loadedModule: ModelsModule | undefined;
-  return jest
-    .isolateModulesAsync(async () => {
-      loadedModule = (await import(
-        '../../../lambda/utils/models'
-      )) as ModelsModule;
-    })
-    .then(() => {
-      return loadedModule!;
-    });
+  const moduleUrl = new URL(
+    `?${Date.now()}-${Math.random()}`,
+    pathToFileURL(modelsModulePath)
+  );
+
+  return import(moduleUrl.href) as Promise<ModelsModule>;
+};
+
+const importModelsModuleInChild = (
+  envOverrides: Partial<NodeJS.ProcessEnv> = {}
+) => {
+  const env = {
+    ...originalEnv,
+    ...baseEnv,
+    ...envOverrides,
+  };
+  const moduleUrl = pathToFileURL(modelsModulePath).href;
+
+  return spawnSync(
+    'bun',
+    ['--eval', `await import(${JSON.stringify(moduleUrl)})`],
+    {
+      cwd: process.cwd(),
+      env,
+      encoding: 'utf8',
+    }
+  );
 };
 
 describe('lambda/utils/models', () => {
-  beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...originalEnv };
-  });
-
   afterAll(() => {
     process.env = originalEnv;
   });
@@ -287,8 +305,41 @@ describe('lambda/utils/models', () => {
   });
 
   it('keeps malformed env parsing failures at module load', async () => {
-    await expect(loadModelsModule({ MODEL_IDS: 'not-json' })).rejects.toThrow(
-      /Unexpected token|Unexpected end of JSON input/
+    const result = importModelsModuleInChild({ MODEL_IDS: 'not-json' });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(
+      /JSON Parse error|Unexpected token|Unexpected end of JSON input/i
     );
+  });
+
+  it.each([
+    [
+      'missing MODEL_IDS',
+      { MODEL_IDS: undefined },
+      /MODEL_IDS.*required|MODEL_IDS.*empty/i,
+    ],
+    [
+      'empty MODEL_IDS',
+      { MODEL_IDS: '[]' },
+      /MODEL_IDS.*at least one|MODEL_IDS.*empty/i,
+    ],
+    [
+      'whitespace IMAGE_GENERATION_MODEL_IDS',
+      { IMAGE_GENERATION_MODEL_IDS: '   ' },
+      /IMAGE_GENERATION_MODEL_IDS.*required|IMAGE_GENERATION_MODEL_IDS.*empty/i,
+    ],
+    [
+      'invalid enum model id',
+      {
+        MODEL_IDS: JSON.stringify([
+          { modelId: 'not-a-real-model', region: 'us-east-1' },
+        ]),
+      },
+      /unsupported|not a text model/i,
+    ],
+  ])('%s', async (_name, envOverrides, pattern) => {
+    const result = importModelsModuleInChild(envOverrides);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(pattern);
   });
 });
