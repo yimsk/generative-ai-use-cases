@@ -1,4 +1,4 @@
-import { useState, memo, useCallback, useEffect, useRef } from 'react';
+import { useState, memo, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { VscCode } from 'react-icons/vsc';
 import { LuChartBar, LuExpand } from 'react-icons/lu';
@@ -34,6 +34,25 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
     return zoomChartRef.current ?? mainChartRef.current;
   }, []);
 
+  const parsedChartData = useMemo(() => {
+    const trimmedCode = code.trim();
+
+    if (!trimmedCode) {
+      return { parsed: null as unknown, isValid: false };
+    }
+
+    try {
+      const parsed = JSON.parse(code);
+
+      return {
+        parsed,
+        isValid: isValidChartData(parsed),
+      };
+    } catch {
+      return { parsed: null as unknown, isValid: false };
+    }
+  }, [code]);
+
   const handleMainChartInit = useCallback(
     (instance: echarts.ECharts | null) => {
       mainChartRef.current = instance;
@@ -68,12 +87,8 @@ export const ChartWithToggle = memo(({ code }: ChartWithToggleProps) => {
   const getEffectiveViewMode = (): 'chart' | 'code' => {
     if (manualViewMode !== null) return manualViewMode;
     if (!code.trim()) return 'code';
-    try {
-      const parsed = JSON.parse(code);
-      return isValidChartData(parsed) ? 'chart' : 'code';
-    } catch {
-      return 'code';
-    }
+
+    return parsedChartData.isValid ? 'chart' : 'code';
   };
   const viewMode = getEffectiveViewMode();
 

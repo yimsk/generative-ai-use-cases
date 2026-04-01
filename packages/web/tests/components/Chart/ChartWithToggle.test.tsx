@@ -30,45 +30,19 @@ vi.mock('../../../src/hooks/useInterUseCases', () => ({
 }));
 
 vi.mock('../../../src/components/Chart/EChartsRenderer', () => ({
-  default: ({
-    rawJson,
-    onChartInit,
-  }: {
-    rawJson: string;
-    onChartInit?: (instance: unknown) => void;
-  }) => {
-    try {
-      const parsed = JSON.parse(rawJson) as {
-        title?: string;
-        type?: string;
-        data?: unknown[];
-        series?: unknown[];
-      };
-
-      const isValid =
-        typeof parsed.type === 'string' &&
-        (Array.isArray(parsed.data) || Array.isArray(parsed.series));
-
-      if (!isValid) {
-        return <div>{invalidDataLabel}</div>;
-      }
-
-      if (onChartInit) {
-        onChartInit(mockChartInstance);
-      }
-
-      return (
-        <div data-testid="echarts-renderer">
-          {parsed.title ? <h3>{parsed.title}</h3> : null}
-          <div
-            data-testid="echarts-container"
-            style={{ width: '100%', height: 300 }}
-          />
-        </div>
-      );
-    } catch {
-      return <div>{invalidDataLabel}</div>;
+  default: ({ onChartInit }: { onChartInit?: (instance: unknown) => void }) => {
+    if (onChartInit) {
+      onChartInit(mockChartInstance);
     }
+
+    return (
+      <div data-testid="echarts-renderer">
+        <div
+          data-testid="echarts-container"
+          style={{ width: '100%', height: 300 }}
+        />
+      </div>
+    );
   },
 }));
 
@@ -151,6 +125,19 @@ describe('ChartWithToggle', () => {
     render(<ChartWithToggle code={invalidJson} />);
 
     expect(screen.getByTestId('code-panel').className).toContain('visible');
+  });
+
+  it('does not re-parse JSON on rerender with the same input', () => {
+    const parseSpy = vi.spyOn(JSON, 'parse');
+
+    render(<ChartWithToggle code={validBarChartJson} />);
+
+    fireEvent.click(screen.getByText('chart.view_code'));
+    fireEvent.click(screen.getByText('chart.view_chart'));
+
+    expect(parseSpy).toHaveBeenCalledTimes(1);
+
+    parseSpy.mockRestore();
   });
 
   it('renders SVG download button and downloads via chart instance from callback', () => {
