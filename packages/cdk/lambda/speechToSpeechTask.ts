@@ -15,6 +15,7 @@ import {
   Model,
 } from 'generative-ai-use-cases';
 import { initBedrockRuntimeClient } from './utils/bedrockClient';
+import { z } from 'zod';
 
 Object.assign(global, { WebSocket: require('ws') });
 
@@ -23,6 +24,38 @@ const MODEL_REGION = process.env.MODEL_REGION as string;
 const MAX_AUDIO_INPUT_QUEUE_SIZE = 200;
 const MIN_AUDIO_OUTPUT_QUEUE_SIZE = 10;
 const MAX_AUDIO_OUTPUT_PER_BATCH = 20;
+
+const additionalModelFieldsSchema = z
+  .object({
+    generationStage: z.string().optional(),
+  })
+  .passthrough();
+
+const getGenerationStage = (
+  additionalModelFields?: string | null
+): string | null => {
+  if (!additionalModelFields?.trim()) {
+    return null;
+  }
+
+  try {
+    const parsedFields = JSON.parse(additionalModelFields);
+    const validatedFields = additionalModelFieldsSchema.safeParse(parsedFields);
+
+    if (!validatedFields.success) {
+      console.error(
+        'Invalid additionalModelFields schema',
+        validatedFields.error
+      );
+      return null;
+    }
+
+    return validatedFields.data.generationStage ?? null;
+  } catch (error) {
+    console.error('Failed to parse additionalModelFields', error);
+    return null;
+  }
+};
 
 type BidirectionalStreamEvent = {
   event: Record<string, unknown>;
@@ -442,13 +475,9 @@ class SpeechToSpeechSession {
             jsonResponse.event?.contentStart &&
             jsonResponse.event?.contentStart?.type === 'TEXT'
           ) {
-            let generationStage = null;
-
-            if (jsonResponse.event?.contentStart?.additionalModelFields) {
-              generationStage = JSON.parse(
-                jsonResponse.event?.contentStart?.additionalModelFields
-              ).generationStage;
-            }
+            const generationStage = getGenerationStage(
+              jsonResponse.event?.contentStart?.additionalModelFields
+            );
 
             await this.dispatchEvent('textStart', {
               id: jsonResponse.event?.contentStart?.contentId,

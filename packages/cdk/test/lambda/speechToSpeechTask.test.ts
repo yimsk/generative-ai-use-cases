@@ -1,40 +1,43 @@
+const { beforeEach, describe, expect, test, vi } = require('bun:test');
 import { Model } from 'generative-ai-use-cases';
 
-const mockAmplifyConfigure = jest.fn();
-const mockConnect = jest.fn();
-const mockFromNodeProviderChain = jest.fn();
-const mockInitBedrockRuntimeClient = jest.fn();
-const mockRandomUUID = jest.fn();
+vi.resetModules = () => {};
 
-jest.mock('aws-amplify', () => ({
+const mockAmplifyConfigure = vi.fn();
+const mockConnect = vi.fn();
+const mockFromNodeProviderChain = vi.fn();
+const mockInitBedrockRuntimeClient = vi.fn();
+const mockRandomUUID = vi.fn();
+
+vi.mock('aws-amplify', () => ({
   Amplify: {
     configure: mockAmplifyConfigure,
   },
 }));
 
-jest.mock('aws-amplify/data', () => ({
+vi.mock('aws-amplify/data', () => ({
   events: {
     connect: mockConnect,
   },
 }));
 
-jest.mock('@aws-sdk/credential-providers', () => ({
+vi.mock('@aws-sdk/credential-providers', () => ({
   fromNodeProviderChain: mockFromNodeProviderChain,
 }));
 
-jest.mock('../../lambda/utils/bedrockClient', () => ({
+vi.mock('../../lambda/utils/bedrockClient', () => ({
   initBedrockRuntimeClient: mockInitBedrockRuntimeClient,
 }));
 
-jest.mock('crypto', () => ({
+vi.mock('crypto', () => ({
   randomUUID: mockRandomUUID,
 }));
 
-jest.mock('@smithy/node-http-handler', () => ({
-  NodeHttp2Handler: jest.fn().mockImplementation((config) => config),
+vi.mock('@smithy/node-http-handler', () => ({
+  NodeHttp2Handler: vi.fn().mockImplementation((config: unknown) => config),
 }));
 
-jest.mock('@aws-sdk/client-bedrock-runtime', () => {
+vi.mock('@aws-sdk/client-bedrock-runtime', () => {
   class InvokeModelWithBidirectionalStreamCommand {
     input: unknown;
 
@@ -58,9 +61,9 @@ type MockChannelEvent = {
 };
 
 type MockChannel = {
-  publish: jest.Mock<Promise<void>, [unknown]>;
-  subscribe: jest.Mock<void, [unknown]>;
-  close: jest.Mock<void, []>;
+  publish: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
   handlers?: {
     next: (event: { event: MockChannelEvent }) => Promise<void>;
     error: (error: unknown) => void;
@@ -122,18 +125,18 @@ async function collectRequestEvents(body: AsyncIterable<unknown>) {
 
 function createChannel(): MockChannel {
   return {
-    publish: jest.fn().mockResolvedValue(undefined),
-    subscribe: jest.fn(function (this: MockChannel, handlers) {
+    publish: vi.fn().mockResolvedValue(undefined),
+    subscribe: vi.fn(function (this: MockChannel, handlers: unknown) {
       this.handlers = handlers as MockChannel['handlers'];
     }),
-    close: jest.fn(),
+    close: vi.fn(),
   };
 }
 
 describe('speechToSpeechTask handler', () => {
   beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    vi.resetModules();
+    vi.clearAllMocks();
 
     process.env.MODEL_REGION = 'us-east-1';
     process.env.EVENT_API_ENDPOINT = 'https://example.com/graphql';
@@ -155,7 +158,7 @@ describe('speechToSpeechTask handler', () => {
 
     mockConnect.mockResolvedValue(channel);
     mockInitBedrockRuntimeClient.mockResolvedValue({
-      send: jest.fn(
+      send: vi.fn(
         async (command: { input: { body: AsyncIterable<unknown> } }) => {
           const handlers = channel.handlers;
           const collectedEventsPromise = collectRequestEvents(
@@ -419,12 +422,77 @@ describe('speechToSpeechTask handler', () => {
     expect(channel.close).toHaveBeenCalledTimes(1);
   });
 
+  test.each([
+    ['empty string', ''],
+    ['whitespace', '   '],
+    ['truncated json', '{"generationStage":"RESPONSE"'],
+    ['huge invalid string', `{"generationStage":"${'x'.repeat(5000)}`],
+    ['null', null],
+  ])(
+    'keeps streaming on malformed additionalModelFields (%s)',
+    async (_label: string, additionalModelFields: unknown) => {
+      const channel = createChannel();
+
+      mockConnect.mockResolvedValue(channel);
+      mockInitBedrockRuntimeClient.mockResolvedValue({
+        send: vi.fn(async () => ({
+          body: (async function* () {
+            yield toStreamChunk({
+              event: {
+                contentStart: {
+                  type: 'TEXT',
+                  contentId: 'assistant-text-1',
+                  role: 'ASSISTANT',
+                  additionalModelFields,
+                },
+              },
+            });
+            yield toStreamChunk({
+              event: {
+                textOutput: {
+                  contentId: 'assistant-text-1',
+                  role: 'ASSISTANT',
+                  content: 'after malformed json',
+                },
+              },
+            });
+          })(),
+        })),
+      });
+
+      const { handler } = await import('../../lambda/speechToSpeechTask');
+
+      await expect(
+        handler({ channelId: 'channel-malformed', model })
+      ).resolves.toBeUndefined();
+
+      expect(channel.publish).toHaveBeenCalledWith({
+        direction: 'btoc',
+        event: 'textStart',
+        data: {
+          id: 'assistant-text-1',
+          role: 'assistant',
+          generationStage: null,
+        },
+      });
+      expect(channel.publish).toHaveBeenCalledWith({
+        direction: 'btoc',
+        event: 'textOutput',
+        data: {
+          id: 'assistant-text-1',
+          role: 'assistant',
+          content: 'after malformed json',
+        },
+      });
+    }
+  );
+
   test('still emits cleanup when response stream errors', async () => {
     const channel = createChannel();
 
     mockConnect.mockResolvedValue(channel);
     mockInitBedrockRuntimeClient.mockResolvedValue({
-      send: jest.fn(
+      send: vi.fn(
         async (command: { input: { body: AsyncIterable<unknown> } }) => {
           const handlers = channel.handlers;
           const collectedEventsPromise = collectRequestEvents(
@@ -508,7 +576,7 @@ describe('speechToSpeechTask handler', () => {
       sendIndex += 1;
 
       return {
-        send: jest.fn(
+        send: vi.fn(
           async (command: { input: { body: AsyncIterable<unknown> } }) => {
             const channelId =
               currentSendIndex === 0 ? 'channel-one' : 'channel-two';
