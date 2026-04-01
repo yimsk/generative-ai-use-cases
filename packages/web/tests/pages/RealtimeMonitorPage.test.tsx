@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   act,
   fireEvent,
@@ -14,7 +13,6 @@ import type { MonitorConfig } from '../../src/components/RealtimeMonitor/Monitor
 
 const startConfig: MonitorConfig = {
   meetingName: 'Weekly Sync',
-  participants: 'Alice, Bob',
   background: 'Release planning',
   primaryLanguage: 'ja-JP',
   secondaryLanguage: 'en-US',
@@ -71,6 +69,7 @@ const mockState = vi.hoisted(() => ({
     shouldGenerateContext: vi.fn(() => true),
   },
   lastDisplayProps: null as null | Record<string, unknown>,
+  lastContextMenuProps: null as null | Record<string, unknown>,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -139,13 +138,25 @@ vi.mock('../../src/components/RealtimeMonitor/MonitorDisplay', () => ({
 vi.mock('../../src/components/RealtimeMonitor/RecordingContextMenu', () => ({
   default: ({
     systemGeneratedContext,
+    translationContext,
   }: {
     systemGeneratedContext?: string;
-  }) => (
-    <div data-testid="recording-context-menu">
-      {systemGeneratedContext ?? 'no-system-context'}
-    </div>
-  ),
+    translationContext?: string;
+  }) => {
+    mockState.lastContextMenuProps = {
+      systemGeneratedContext,
+      translationContext,
+    };
+
+    return (
+      <div data-testid="recording-context-menu">
+        {systemGeneratedContext ?? 'no-system-context'}
+        <span data-testid="translation-context">
+          {translationContext ?? ''}
+        </span>
+      </div>
+    );
+  },
 }));
 
 import RealtimeMonitorPage from '../../src/pages/RealtimeMonitorPage';
@@ -184,6 +195,7 @@ describe('RealtimeMonitorPage', () => {
     mockState.meetingContext.shouldGenerateContext.mockClear();
 
     mockState.lastDisplayProps = null;
+    mockState.lastContextMenuProps = null;
   });
 
   afterEach(() => {
@@ -243,7 +255,6 @@ describe('RealtimeMonitorPage', () => {
         [
           'Structured meeting context:',
           'Meeting name: Weekly Sync',
-          'Participants: Alice, Bob',
           'Background: Release planning',
           '',
           'Recent conversation context:',
@@ -336,6 +347,19 @@ describe('RealtimeMonitorPage', () => {
     expect(screen.getByTestId('recording-context-menu')).toHaveTextContent(
       'System-generated context'
     );
+    expect(mockState.lastContextMenuProps).toMatchObject({
+      translationContext: [
+        'Structured meeting context:',
+        'Meeting name: Weekly Sync',
+        'Background: Release planning',
+        '',
+        'System-generated context:',
+        'System-generated context',
+        '',
+        'Recent conversation context:',
+        'Recent transcript context',
+      ].join('\n'),
+    });
 
     setRawTranscripts([firstSegment, secondSegment]);
     await act(async () => {
@@ -351,7 +375,6 @@ describe('RealtimeMonitorPage', () => {
       [
         'Structured meeting context:',
         'Meeting name: Weekly Sync',
-        'Participants: Alice, Bob',
         'Background: Release planning',
         '',
         'System-generated context:',

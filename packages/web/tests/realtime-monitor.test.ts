@@ -151,12 +151,9 @@ describe('monitor translation context helpers', () => {
     expect(
       buildMonitorStaticContext({
         meetingName: 'Weekly Sync',
-        participants: 'Alice, Bob',
         background: 'Release planning',
       })
-    ).toBe(
-      'Meeting name: Weekly Sync\nParticipants: Alice, Bob\nBackground: Release planning'
-    );
+    ).toBe('Meeting name: Weekly Sync\nBackground: Release planning');
   });
 
   it('combines static, generated, and recent context for translation', () => {
@@ -385,12 +382,11 @@ describe('TranslationPanel', () => {
 });
 
 describe('StructuredContextForm', () => {
-  it('renders 3 fields with labels', () => {
+  it('renders 2 fields with labels', () => {
     render(
       React.createElement(StructuredContextForm, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -398,7 +394,6 @@ describe('StructuredContextForm', () => {
     );
 
     expect(screen.getByText('monitor.meeting_name')).toBeInTheDocument();
-    expect(screen.getByText('monitor.participants')).toBeInTheDocument();
     expect(screen.getByText('monitor.background')).toBeInTheDocument();
   });
 
@@ -408,7 +403,6 @@ describe('StructuredContextForm', () => {
       React.createElement(StructuredContextForm, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange,
@@ -422,7 +416,6 @@ describe('StructuredContextForm', () => {
 
     expect(onChange).toHaveBeenCalledWith({
       meetingName: 'Test Meeting',
-      participants: '',
       background: '',
     });
   });
@@ -432,7 +425,6 @@ describe('StructuredContextForm', () => {
       React.createElement(StructuredContextForm, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -453,7 +445,6 @@ describe('RecordingContextMenu', () => {
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -470,7 +461,6 @@ describe('RecordingContextMenu', () => {
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -482,7 +472,6 @@ describe('RecordingContextMenu', () => {
 
     // Form should now be visible
     expect(screen.getByText('monitor.meeting_name')).toBeInTheDocument();
-    expect(screen.getByText('monitor.participants')).toBeInTheDocument();
     expect(screen.getByText('monitor.background')).toBeInTheDocument();
   });
 
@@ -491,7 +480,6 @@ describe('RecordingContextMenu', () => {
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: 'Test Meeting',
-          participants: 'John, Jane',
           background: 'Test background',
         },
         onChange: () => {},
@@ -512,7 +500,6 @@ describe('RecordingContextMenu', () => {
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange,
@@ -531,7 +518,6 @@ describe('RecordingContextMenu', () => {
 
     expect(onChange).toHaveBeenCalledWith({
       meetingName: 'New Meeting',
-      participants: '',
       background: '',
     });
   });
@@ -541,7 +527,6 @@ describe('RecordingContextMenu', () => {
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -563,7 +548,6 @@ describe('RecordingContextMenu', () => {
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -584,7 +568,6 @@ describe('RecordingContextMenu', () => {
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -600,12 +583,11 @@ describe('RecordingContextMenu', () => {
     expect(textarea).toHaveAttribute('readOnly');
   });
 
-  it('shows placeholder when context is empty string', () => {
+  it('does not render system context textarea when context is empty string', () => {
     render(
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -617,11 +599,9 @@ describe('RecordingContextMenu', () => {
     const button = screen.getByText('monitor.edit_context');
     fireEvent.click(button);
 
-    const textarea = screen.getByLabelText('monitor.system_generated_context');
-    expect(textarea).toHaveAttribute(
-      'placeholder',
-      'monitor.system_generated_context_placeholder'
-    );
+    expect(
+      screen.queryByLabelText('monitor.system_generated_context')
+    ).not.toBeInTheDocument();
   });
 
   it('displays provided value', () => {
@@ -629,7 +609,6 @@ describe('RecordingContextMenu', () => {
       React.createElement(RecordingContextMenu, {
         values: {
           meetingName: '',
-          participants: '',
           background: '',
         },
         onChange: () => {},
@@ -643,6 +622,28 @@ describe('RecordingContextMenu', () => {
 
     const textarea = screen.getByLabelText('monitor.system_generated_context');
     expect(textarea).toHaveValue('AI context here');
+  });
+
+  it('shows translation context when provided', () => {
+    render(
+      React.createElement(RecordingContextMenu, {
+        values: {
+          meetingName: '',
+          background: '',
+        },
+        onChange: () => {},
+        translationContext:
+          'Structured meeting context:\nMeeting name: Weekly Sync',
+      })
+    );
+
+    const button = screen.getByText('monitor.edit_context');
+    fireEvent.click(button);
+
+    const textarea = screen.getByLabelText('monitor.translation_context');
+    expect(textarea).toHaveValue(
+      'Structured meeting context:\nMeeting name: Weekly Sync'
+    );
   });
 });
 
@@ -659,12 +660,20 @@ describe('MonitorSetup', () => {
 
     // Check that context form fields are rendered
     expect(screen.getByText('monitor.meeting_name')).toBeInTheDocument();
-    expect(screen.getByText('monitor.participants')).toBeInTheDocument();
     expect(screen.getByText('monitor.background')).toBeInTheDocument();
 
-    // Check selectors (4 comboboxes: 2 languages + 2 models)
     const selects = screen.getAllByRole('combobox');
-    expect(selects).toHaveLength(4);
+    expect(selects).toHaveLength(2);
+    expect(
+      screen.getByText(
+        (_, node) => node?.textContent === 'monitor.primary_language: ja-JP'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (_, node) => node?.textContent === 'monitor.secondary_language: en-US'
+      )
+    ).toBeInTheDocument();
 
     // Check start button
     expect(screen.getByText('monitor.start_recording')).toBeInTheDocument();
@@ -692,7 +701,6 @@ describe('MonitorSetup', () => {
     expect(onStart).toHaveBeenCalledWith(
       expect.objectContaining({
         meetingName: 'Test Meeting',
-        participants: '',
         background: '',
         primaryLanguage: 'ja-JP',
         secondaryLanguage: 'en-US',
@@ -702,27 +710,10 @@ describe('MonitorSetup', () => {
     );
   });
 
-  it('start button is disabled when languages are the same', () => {
-    render(
-      React.createElement(MonitorSetup, {
-        onStart: () => {},
-      })
-    );
-
-    // Change secondary language to match primary (second combobox)
-    const secondarySelect = screen.getAllByRole('combobox')[1];
-    fireEvent.change(secondarySelect, { target: { value: 'ja-JP' } });
-
-    // Start button should be disabled
-    const startButton = screen.getByText('monitor.start_recording');
-    expect(startButton).toBeDisabled();
-  });
-
   it('exports MonitorConfig type', () => {
     // Type-only test - this verifies the type is exported
     const _config: MonitorConfig = {
       meetingName: '',
-      participants: '',
       background: '',
       primaryLanguage: 'ja-JP',
       secondaryLanguage: 'en-US',
