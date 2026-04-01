@@ -5,9 +5,6 @@ export const buildMonitorStaticContext = (values: StructuredContextValues) => {
     values.meetingName.trim()
       ? `Meeting name: ${values.meetingName.trim()}`
       : '',
-    values.participants.trim()
-      ? `Participants: ${values.participants.trim()}`
-      : '',
     values.background.trim() ? `Background: ${values.background.trim()}` : '',
   ].filter(Boolean);
 

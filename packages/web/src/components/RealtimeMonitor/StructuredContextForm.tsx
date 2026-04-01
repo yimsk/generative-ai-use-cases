@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 export type StructuredContextValues = {
   meetingName: string;
-  participants: string;
   background: string;
 };
 
@@ -29,7 +28,6 @@ const StructuredContextForm: React.FC<Props> = ({
 
   const maxLengths = {
     meetingName: 100,
-    participants: 500,
     background: 2000,
   };
 
@@ -46,10 +44,13 @@ const StructuredContextForm: React.FC<Props> = ({
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-gray-700">
+        <label
+          htmlFor="monitor-meeting-name"
+          className="text-sm font-medium text-gray-700">
           {t('monitor.meeting_name')}
         </label>
         <input
+          id="monitor-meeting-name"
           type="text"
           className="mt-1 w-full rounded border border-black/30 p-2 text-sm disabled:opacity-50"
           value={values.meetingName}
@@ -68,32 +69,13 @@ const StructuredContextForm: React.FC<Props> = ({
       </div>
 
       <div>
-        <label className="text-sm font-medium text-gray-700">
-          {t('monitor.participants')}
-        </label>
-        <textarea
-          className="mt-1 w-full rounded border border-black/30 p-2 text-sm disabled:opacity-50"
-          value={values.participants}
-          onChange={handleChange('participants')}
-          maxLength={maxLengths.participants}
-          rows={2}
-          disabled={disabled}
-          placeholder={t('monitor.participants_placeholder')}
-        />
-        <div
-          className={`mt-1 text-xs ${getCharacterCountColor(
-            values.participants.length,
-            maxLengths.participants
-          )}`}>
-          {[values.participants.length, maxLengths.participants].join('/')}
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium text-gray-700">
+        <label
+          htmlFor="monitor-background"
+          className="text-sm font-medium text-gray-700">
           {t('monitor.background')}
         </label>
         <textarea
+          id="monitor-background"
           className="mt-1 w-full rounded border border-black/30 p-2 text-sm disabled:opacity-50"
           value={values.background}
           onChange={handleChange('background')}

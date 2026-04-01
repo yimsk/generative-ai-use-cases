@@ -7,7 +7,6 @@ import { MODELS, textModels } from '../../hooks/useModel';
 
 export type MonitorConfig = {
   meetingName: string;
-  participants: string;
   background: string;
   primaryLanguage: string;
   secondaryLanguage: string;
@@ -24,14 +23,12 @@ type SelectOption = {
   label: string;
 };
 
-const languageOptions: SelectOption[] = [
-  { value: 'ja-JP', label: 'Japanese (ja-JP)' },
-  { value: 'en-US', label: 'English (en-US)' },
-  { value: 'ko-KR', label: 'Korean (ko-KR)' },
-  { value: 'th-TH', label: 'Thai (th-TH)' },
-  { value: 'vi-VN', label: 'Vietnamese (vi-VN)' },
-  { value: 'zh-CN', label: 'Chinese (zh-CN)' },
-];
+const DEFAULT_PRIMARY_LANGUAGE = 'ja-JP';
+const DEFAULT_SECONDARY_LANGUAGE = 'en-US';
+const primaryLanguageLabel = 'monitor.primary_language';
+const secondaryLanguageLabel = 'monitor.secondary_language';
+const primaryLanguageValue = `: ${DEFAULT_PRIMARY_LANGUAGE}`;
+const secondaryLanguageValue = `: ${DEFAULT_SECONDARY_LANGUAGE}`;
 
 const modelOptions: SelectOption[] = Array.from(
   new Map(
@@ -52,23 +49,16 @@ const MonitorSetup: React.FC<Props> = ({ onStart }) => {
   const { t } = useTranslation();
   const [contextValues, setContextValues] = useState<StructuredContextValues>({
     meetingName: '',
-    participants: '',
     background: '',
   });
-  const [primaryLanguage, setPrimaryLanguage] = useState('ja-JP');
-  const [secondaryLanguage, setSecondaryLanguage] = useState('en-US');
   const [translationModel, setTranslationModel] = useState(
     modelOptions[0]?.value ?? ''
   );
   const [topicModel, setTopicModel] = useState(modelOptions[0]?.value ?? '');
 
   const canStart = useMemo(() => {
-    return (
-      primaryLanguage !== secondaryLanguage &&
-      translationModel !== '' &&
-      topicModel !== ''
-    );
-  }, [primaryLanguage, secondaryLanguage, topicModel, translationModel]);
+    return translationModel !== '' && topicModel !== '';
+  }, [topicModel, translationModel]);
 
   const handleStart = () => {
     if (!canStart) {
@@ -77,8 +67,8 @@ const MonitorSetup: React.FC<Props> = ({ onStart }) => {
 
     onStart({
       ...contextValues,
-      primaryLanguage,
-      secondaryLanguage,
+      primaryLanguage: DEFAULT_PRIMARY_LANGUAGE,
+      secondaryLanguage: DEFAULT_SECONDARY_LANGUAGE,
       translationModel,
       topicModel,
     });
@@ -105,31 +95,16 @@ const MonitorSetup: React.FC<Props> = ({ onStart }) => {
             </div>
           </section>
 
-          <section className="grid gap-6 md:grid-cols-2">
-            <div>
-              <select
-                className={selectClassName}
-                value={primaryLanguage}
-                onChange={(event) => setPrimaryLanguage(event.target.value)}>
-                {languageOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <select
-                className={selectClassName}
-                value={secondaryLanguage}
-                onChange={(event) => setSecondaryLanguage(event.target.value)}>
-                {languageOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+          <section className="rounded-lg border border-gray-700 bg-black/10 p-4 text-sm text-gray-300">
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
+              <div>
+                <span>{t(primaryLanguageLabel)}</span>
+                <span>{primaryLanguageValue}</span>
+              </div>
+              <div>
+                <span>{t(secondaryLanguageLabel)}</span>
+                <span>{secondaryLanguageValue}</span>
+              </div>
             </div>
           </section>
 
