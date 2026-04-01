@@ -636,6 +636,8 @@ monitor:
   stop_recording: Dừng ghi âm
   system_generated_context: Ngữ cảnh hệ thống
   system_generated_context_placeholder: Ngữ cảnh do AI tạo sẽ xuất hiện ở đây...
+  translation_context: Ngữ cảnh dịch
+  translation_context_placeholder: Ngữ cảnh dịch sẽ xuất hiện ở đây khi sẵn sàng.
   title: Màn hình giám sát dịch thuật thờigian thực
   topic_model: Mô hình chủ đề
   translation_model: Mô hình dịch thuật

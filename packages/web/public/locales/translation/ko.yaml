@@ -503,6 +503,8 @@ monitor:
   stop_recording: 녹음 중지
   system_generated_context: 시스템 컨텍스트
   system_generated_context_placeholder: AI 생성 컨텍스트가 여기에 표시됩니다...
+  translation_context: 번역 컨텍스트
+  translation_context_placeholder: 사용 가능해지면 번역 컨텍스트가 여기에 표시됩니다.
   title: 실시간 번역 모니터
   topic_model: 주제 모델
   translation_model: 번역 모델
