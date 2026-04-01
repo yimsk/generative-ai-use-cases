@@ -33,6 +33,7 @@ const MonitorSession: React.FC<SessionProps> = ({
     setContextValues,
     setIsEnglishMode,
     systemGeneratedContext,
+    translationContext,
     topicEn,
     topicJa,
   } = useRealtimeMonitorSession({ config, phase, onStop });
@@ -48,6 +49,7 @@ const MonitorSession: React.FC<SessionProps> = ({
       phase={phase}
       segments={segments}
       systemGeneratedContext={systemGeneratedContext}
+      translationContext={translationContext}
       topicEn={topicEn}
       topicJa={topicJa}
       onClear={onClear}

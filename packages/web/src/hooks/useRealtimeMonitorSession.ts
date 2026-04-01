@@ -62,7 +62,6 @@ export const useRealtimeMonitorSession = ({
   const [systemGeneratedContext, setSystemGeneratedContext] = useState('');
   const [contextValues, setContextValues] = useState<StructuredContextValues>({
     meetingName: config.meetingName,
-    participants: config.participants,
     background: config.background,
   });
   const { topicJa, topicEn, isUpdating, updateTopic } = useTopicSummary({
@@ -233,6 +232,7 @@ export const useRealtimeMonitorSession = ({
     setContextValues,
     setIsEnglishMode,
     systemGeneratedContext,
+    translationContext,
     topicEn,
     topicJa,
   };
