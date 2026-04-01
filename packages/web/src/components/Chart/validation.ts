@@ -63,6 +63,55 @@ function isValidScatterDataPoint(input: unknown): input is ScatterDataPoint {
   return false;
 }
 
+export function normalizeSeriesData(
+  series: Array<{
+    name: string;
+    data: Array<{ name: string; value: number }>;
+  }>
+): {
+  categories: string[];
+  series: Array<{ name: string; data: number[] }>;
+} | null {
+  if (!Array.isArray(series) || series.length === 0) {
+    return null;
+  }
+
+  const categories: string[] = [];
+  const seenCategories = new Set<string>();
+
+  const valueMaps = series.map((entry) => {
+    const valueMap = new Map<string, number>();
+
+    entry.data.forEach((item) => {
+      if (valueMap.has(item.name)) {
+        throw new Error(
+          `Series "${entry.name}" has duplicate category name "${item.name}"`
+        );
+      }
+
+      valueMap.set(item.name, item.value);
+
+      if (!seenCategories.has(item.name)) {
+        seenCategories.add(item.name);
+        categories.push(item.name);
+      }
+    });
+
+    return valueMap;
+  });
+
+  return {
+    categories,
+    series: series.map((entry, index) => ({
+      name: entry.name,
+      data: categories.map(
+        (category) =>
+          valueMaps[index].get(category) ?? (null as unknown as number)
+      ),
+    })),
+  };
+}
+
 export function validateBasicChart(
   input: unknown
 ): input is BasicChartInput | ScatterChartInput {
@@ -97,8 +146,11 @@ export function validateBasicChart(
 
   if (hasSeries) {
     const seriesArray = input.series as unknown[];
-    const firstSeriesLength = (seriesArray[0] as { data: unknown[] }).data
-      .length;
+    if (!Array.isArray(seriesArray) || seriesArray.length === 0) return false;
+    const firstSeries = seriesArray[0];
+    if (!isRecord(firstSeries) || !Array.isArray(firstSeries.data))
+      return false;
+    const firstSeriesLength = firstSeries.data.length;
     const needsEqualLength =
       input.type === 'bar' || input.type === 'line' || input.type === 'area';
 

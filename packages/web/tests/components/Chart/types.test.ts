@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import EChartsRenderer from '../../../src/components/Chart/EChartsRenderer';
 import {
   isValidChartData,
+  normalizeSeriesData,
   validateBasicChart,
   validateBoxplot,
   validateCandlestick,
@@ -33,7 +34,10 @@ const { mockSetOption, mockInit } = vi.hoisted(() => {
     getDataURL: vi.fn(),
   }));
 
-  return { mockSetOption: setOption, mockInit: init };
+  return {
+    mockSetOption: setOption,
+    mockInit: init,
+  };
 });
 
 vi.mock('echarts', () => ({
@@ -219,6 +223,22 @@ describe('validateBasicChart', () => {
     ).toBe(false);
   });
 
+  it('rejects malformed series arrays without throwing', () => {
+    expect(() =>
+      validateBasicChart({
+        type: 'bar',
+        series: [{ name: 'Series 1' }],
+      })
+    ).not.toThrow();
+
+    expect(
+      validateBasicChart({
+        type: 'bar',
+        series: [{ name: 'Series 1' }],
+      })
+    ).toBe(false);
+  });
+
   it('rejects invalid chart type', () => {
     expect(
       validateBasicChart({
@@ -367,6 +387,35 @@ describe('validateBasicChart', () => {
         ],
       })
     ).toBe(false);
+  });
+});
+
+describe('normalizeSeriesData', () => {
+  it('normalizes categories consistently across series', () => {
+    expect(
+      normalizeSeriesData([
+        {
+          name: 'Series A',
+          data: [
+            { name: 'b', value: 2 },
+            { name: 'a', value: 1 },
+          ],
+        },
+        {
+          name: 'Series B',
+          data: [
+            { name: 'a', value: 3 },
+            { name: 'c', value: 4 },
+          ],
+        },
+      ])
+    ).toEqual({
+      categories: ['b', 'a', 'c'],
+      series: [
+        { name: 'Series A', data: [2, 1, null] },
+        { name: 'Series B', data: [null, 3, 4] },
+      ],
+    });
   });
 });
 

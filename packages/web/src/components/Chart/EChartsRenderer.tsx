@@ -15,6 +15,7 @@ import {
   validateHeatmap,
   validateMap,
   validateRadar,
+  normalizeSeriesData,
 } from './validation';
 import type {
   BasicChartInput,
@@ -85,50 +86,10 @@ function buildAxisGrid(
   };
 }
 
-function normalizeMultiSeriesCategoryData(series: BasicChartInput['series']) {
-  if (!series || series.length === 0) {
-    return null;
-  }
-
-  const categories: string[] = [];
-  const seenCategories = new Set<string>();
-
-  const valueMaps = series.map((entry) => {
-    const valueMap = new Map<string, number>();
-
-    entry.data.forEach((item) => {
-      if (valueMap.has(item.name)) {
-        throw new Error(
-          `Series "${entry.name}" has duplicate category name "${item.name}"`
-        );
-      }
-
-      valueMap.set(item.name, item.value);
-
-      if (!seenCategories.has(item.name)) {
-        seenCategories.add(item.name);
-        categories.push(item.name);
-      }
-    });
-
-    return valueMap;
-  });
-
-  return {
-    categories,
-    series: series.map((entry, index) => ({
-      name: entry.name,
-      data: categories.map(
-        (category) => valueMaps[index].get(category) ?? null
-      ),
-    })),
-  };
-}
-
 function buildCategorySeries(
   input: BasicChartInput,
   chartType: 'bar' | 'line',
-  normalizedMultiSeries?: ReturnType<typeof normalizeMultiSeriesCategoryData>,
+  normalizedMultiSeries?: ReturnType<typeof normalizeSeriesData>,
   extra?: (series: { areaStyle?: object }) => void
 ) {
   const isMultiSeries = Array.isArray(input.series) && input.series.length > 0;
@@ -226,7 +187,7 @@ function buildBasicOption(
   const isMultiSeries = Array.isArray(input.series) && input.series.length > 0;
   const normalizedCategoryData =
     input.type === 'bar' || input.type === 'line' || input.type === 'area'
-      ? normalizeMultiSeriesCategoryData(input.series)
+      ? normalizeSeriesData(input.series ?? [])
       : null;
   const categoryData =
     normalizedCategoryData?.categories ?? getCategoryData(input);
@@ -378,7 +339,7 @@ function buildScatterTooltipFormatter(
   const xLabel = input.xAxisLabel ?? 'x';
   const yLabel = input.yAxisLabel ?? 'y';
 
-  return (params) => {
+  return ((params: ScatterTooltipFormatterParam) => {
     const target = Array.isArray(params) ? params[0] : params;
     const datum = target as {
       name?: string;
@@ -397,7 +358,7 @@ function buildScatterTooltipFormatter(
     }
 
     return [name, `${yLabel}: ${value ?? '-'}`].filter(Boolean).join('\n');
-  };
+  }) as TooltipFormatter;
 }
 
 function buildHeatmapOption(input: HeatmapInput): echarts.EChartsOption {
@@ -474,6 +435,17 @@ type TooltipFormatter = Exclude<TooltipOption['formatter'], string | undefined>;
 type MapTooltipFormatterParam =
   | { name?: string; value?: unknown }
   | Array<{ name?: string; value?: unknown }>;
+type ScatterTooltipFormatterParam =
+  | {
+      name?: string;
+      value?: number | [number, number];
+      data?: { name?: string; value?: number | [number, number] };
+    }
+  | Array<{
+      name?: string;
+      value?: number | [number, number];
+      data?: { name?: string; value?: number | [number, number] };
+    }>;
 
 function buildMapOption(mapData: MapInput): echarts.EChartsOption {
   const values = mapData.data.map((datum) => datum.value);
