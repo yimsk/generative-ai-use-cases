@@ -37,6 +37,21 @@ export const pcmEncodeChunk = (chunk: Buffer) => {
   return Buffer.from(buffer);
 };
 
+const AUDIO_STREAM_DEBUG_PREFIX = '[useAudioTranscription]';
+const AUDIO_STREAM_CHUNK_LOG_INTERVAL = 500;
+
+const logAudioStreamDebug = (
+  message: string,
+  data?: Record<string, unknown>
+) => {
+  if (data) {
+    console.log(`${AUDIO_STREAM_DEBUG_PREFIX} ${message}`, data);
+    return;
+  }
+
+  console.log(`${AUDIO_STREAM_DEBUG_PREFIX} ${message}`);
+};
+
 export const buildTranscriptView = (
   rawTranscripts: RawTranscript[],
   language: string
@@ -90,12 +105,43 @@ export const createTranscribeClient = async () => {
 
 export const createAudioStream = (stream: AsyncIterable<Buffer>) => {
   return (async function* () {
-    for await (const chunk of stream) {
-      yield {
-        AudioEvent: {
-          AudioChunk: pcmEncodeChunk(chunk),
-        },
-      };
+    let chunkCount = 0;
+
+    try {
+      for await (const chunk of stream) {
+        chunkCount += 1;
+        const encodedChunk = pcmEncodeChunk(chunk);
+
+        if (
+          chunkCount <= 3 ||
+          chunkCount % AUDIO_STREAM_CHUNK_LOG_INTERVAL === 0
+        ) {
+          logAudioStreamDebug('Yielding audio chunk to transcribe', {
+            chunkCount,
+            rawByteLength: chunk.length,
+            encodedByteLength: encodedChunk.length,
+          });
+        }
+
+        yield {
+          AudioEvent: {
+            AudioChunk: encodedChunk,
+          },
+        };
+      }
+    } catch (error) {
+      logAudioStreamDebug('Audio stream iteration failed', {
+        chunkCount,
+        error:
+          error instanceof Error
+            ? { name: error.name, message: error.message }
+            : error,
+      });
+      throw error;
+    } finally {
+      logAudioStreamDebug('Audio stream iteration finished', {
+        chunkCount,
+      });
     }
   })();
 };
