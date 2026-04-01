@@ -78,14 +78,6 @@ const MeetingMinutesRealtimeTranslation: React.FC<
     rawTranscripts: screenRawTranscripts,
   } = useScreenAudio();
 
-  // Notify parent component of recording state changes
-  useEffect(() => {
-    onRecordingStateChange?.({
-      micRecording,
-      screenRecording,
-    });
-  }, [micRecording, screenRecording, onRecordingStateChange]);
-
   // Internal state management
   const [primaryLanguage, setPrimaryLanguage] = useState(
     initialPrimaryLanguage
@@ -132,6 +124,32 @@ const MeetingMinutesRealtimeTranslation: React.FC<
 
   // Simple session management
   const [currentSessionId, setCurrentSessionId] = useState(0);
+
+  // Notify parent component of recording state changes
+  useEffect(() => {
+    console.log('[MeetingMinutesRealtimeTranslation] recording state changed', {
+      micRecording,
+      screenRecording,
+      enableMicAudio,
+      enableScreenAudio,
+      translationType,
+      primaryLanguage,
+      secondaryLanguage,
+    });
+    onRecordingStateChange?.({
+      micRecording,
+      screenRecording,
+    });
+  }, [
+    micRecording,
+    screenRecording,
+    enableMicAudio,
+    enableScreenAudio,
+    translationType,
+    primaryLanguage,
+    secondaryLanguage,
+    onRecordingStateChange,
+  ]);
 
   // Translation hook
   const { availableModels, translate, translationInterval } =
@@ -355,6 +373,16 @@ const MeetingMinutesRealtimeTranslation: React.FC<
     }
 
     try {
+      console.log('[MeetingMinutesRealtimeTranslation] start requested', {
+        enableMicAudio,
+        enableScreenAudio,
+        primaryLanguage,
+        secondaryLanguage,
+        translationType,
+        speakerLabel,
+        languageOptions,
+        enableMultiLanguage,
+      });
       let screenStream: MediaStream | null = null;
       if (enableScreenAudio && isScreenAudioSupported) {
         screenStream = await prepareScreenCapture();
@@ -405,6 +433,7 @@ const MeetingMinutesRealtimeTranslation: React.FC<
 
   // Stop transcription
   const handleStopRecording = useCallback(() => {
+    console.log('[MeetingMinutesRealtimeTranslation] stop requested');
     stopMicTranscription();
     stopScreenTranscription();
   }, [stopMicTranscription, stopScreenTranscription]);

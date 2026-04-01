@@ -63,14 +63,6 @@ const MeetingMinutesTranscription: React.FC<
     rawTranscripts: screenRawTranscripts,
   } = useScreenAudio();
 
-  // Notify parent component of recording state changes
-  useEffect(() => {
-    onRecordingStateChange?.({
-      micRecording,
-      screenRecording,
-    });
-  }, [micRecording, screenRecording, onRecordingStateChange]);
-
   // Internal state management
   const [languageCode, setLanguageCode] = useState('auto');
   const [speakerLabel, setSpeakerLabel] = useState(false);
@@ -84,6 +76,26 @@ const MeetingMinutesTranscription: React.FC<
 
   // Simple session management
   const [currentSessionId, setCurrentSessionId] = useState(0);
+
+  // Notify parent component of recording state changes
+  useEffect(() => {
+    console.log('[MeetingMinutesTranscription] recording state changed', {
+      micRecording,
+      screenRecording,
+      enableMicAudio,
+      enableScreenAudio,
+    });
+    onRecordingStateChange?.({
+      micRecording,
+      screenRecording,
+    });
+  }, [
+    micRecording,
+    screenRecording,
+    enableMicAudio,
+    enableScreenAudio,
+    onRecordingStateChange,
+  ]);
 
   // Language options
   const languageOptions = useMemo(
@@ -302,6 +314,12 @@ const MeetingMinutesTranscription: React.FC<
       languageCode === 'auto' ? undefined : (languageCode as LanguageCode);
 
     try {
+      console.log('[MeetingMinutesTranscription] start requested', {
+        enableMicAudio,
+        enableScreenAudio,
+        languageCode,
+        speakerLabel,
+      });
       let screenStream: MediaStream | null = null;
       if (enableScreenAudio && isScreenAudioSupported) {
         screenStream = await prepareScreenCapture();
@@ -334,6 +352,7 @@ const MeetingMinutesTranscription: React.FC<
 
   // Stop transcription
   const handleStopRecording = useCallback(() => {
+    console.log('[MeetingMinutesTranscription] stop requested');
     stopMicTranscription();
     stopScreenTranscription();
   }, [stopMicTranscription, stopScreenTranscription]);
