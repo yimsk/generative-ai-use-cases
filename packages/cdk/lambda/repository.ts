@@ -248,7 +248,8 @@ export const batchCreateMessages = async (
   );
 
   // Update token usage in parallel
-  await Promise.all(items.map(updateTokenUsage));
+  const tokenUsageUpdates = items.map((message) => updateTokenUsage(message));
+  await Promise.all(tokenUsageUpdates);
 
   return items;
 };

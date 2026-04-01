@@ -7,9 +7,60 @@ import {
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 
-const STATS_TABLE_NAME: string = process.env.STATS_TABLE_NAME!;
+const getStatsTableName = () => process.env.STATS_TABLE_NAME!;
 const dynamoDb = new DynamoDBClient({});
 const dynamoDbDocument = DynamoDBDocumentClient.from(dynamoDb);
+
+const createStatsKey = (dateStr: string, userId: string) => ({
+  id: `stats#${dateStr}`,
+  userId,
+});
+
+const createStatsMetricKey = (prefix: string, value: string) =>
+  `${prefix}#${value}`;
+
+const createEmptyTokenUsageStats = (
+  date: string,
+  userId: string
+): TokenUsageStats => ({
+  date,
+  userId,
+  executions: { overall: 0 },
+  inputTokens: { overall: 0 },
+  outputTokens: { overall: 0 },
+  cacheReadInputTokens: { overall: 0 },
+  cacheWriteInputTokens: { overall: 0 },
+});
+
+const mergeTokenUsageMetric = (
+  target: Record<string, number>,
+  source?: Record<string, number>
+) => {
+  if (!source) {
+    return;
+  }
+
+  Object.entries(source).forEach(([key, value]) => {
+    target[key] = (target[key] ?? 0) + value;
+  });
+};
+
+const mergeTokenUsageStats = (
+  target: TokenUsageStats,
+  source: TokenUsageStats
+) => {
+  mergeTokenUsageMetric(target.executions, source.executions);
+  mergeTokenUsageMetric(target.inputTokens, source.inputTokens);
+  mergeTokenUsageMetric(target.outputTokens, source.outputTokens);
+  mergeTokenUsageMetric(
+    target.cacheReadInputTokens,
+    source.cacheReadInputTokens
+  );
+  mergeTokenUsageMetric(
+    target.cacheWriteInputTokens,
+    source.cacheWriteInputTokens
+  );
+};
 
 export async function updateTokenUsage(
   message: RecordedMessage
@@ -34,11 +85,8 @@ export async function updateTokenUsage(
   try {
     await dynamoDbDocument.send(
       new UpdateCommand({
-        TableName: STATS_TABLE_NAME,
-        Key: {
-          id: `stats#${dateStr}`,
-          userId: userId,
-        },
+        TableName: getStatsTableName(),
+        Key: createStatsKey(dateStr, userId),
         UpdateExpression: `
           SET
             #date = :date,
@@ -61,8 +109,8 @@ export async function updateTokenUsage(
         ExpressionAttributeNames: {
           '#date': 'date',
           '#overall': 'overall',
-          '#modelKey': `model#${modelId}`,
-          '#usecaseKey': `usecase#${usecase}`,
+          '#modelKey': createStatsMetricKey('model', modelId),
+          '#usecaseKey': createStatsMetricKey('usecase', usecase),
         },
         ExpressionAttributeValues: {
           ':date': dateStr,
@@ -75,64 +123,9 @@ export async function updateTokenUsage(
         },
       })
     );
-  } catch (updateError) {
-    console.log(
-      'Record does not exist, creating initial structure:',
-      updateError
-    );
-    try {
-      await dynamoDbDocument.send(
-        new UpdateCommand({
-          TableName: STATS_TABLE_NAME,
-          Key: {
-            id: `stats#${dateStr}`,
-            userId: userId,
-          },
-          UpdateExpression: `
-              SET
-                #date = :date,
-                executions = :executionsObj,
-                inputTokens = :inputTokensObj,
-                outputTokens = :outputTokensObj,
-                cacheReadInputTokens = :cacheReadInputTokensObj,
-                cacheWriteInputTokens = :cacheWriteInputTokensObj
-            `,
-          ExpressionAttributeNames: {
-            '#date': 'date',
-          },
-          ExpressionAttributeValues: {
-            ':date': dateStr,
-            ':executionsObj': {
-              overall: 1,
-              [`model#${modelId}`]: 1,
-              [`usecase#${usecase}`]: 1,
-            },
-            ':inputTokensObj': {
-              overall: usage.inputTokens || 0,
-              [`model#${modelId}`]: usage.inputTokens || 0,
-              [`usecase#${usecase}`]: usage.inputTokens || 0,
-            },
-            ':outputTokensObj': {
-              overall: usage.outputTokens || 0,
-              [`model#${modelId}`]: usage.outputTokens || 0,
-              [`usecase#${usecase}`]: usage.outputTokens || 0,
-            },
-            ':cacheReadInputTokensObj': {
-              overall: usage.cacheReadInputTokens || 0,
-              [`model#${modelId}`]: usage.cacheReadInputTokens || 0,
-              [`usecase#${usecase}`]: usage.cacheReadInputTokens || 0,
-            },
-            ':cacheWriteInputTokensObj': {
-              overall: usage.cacheWriteInputTokens || 0,
-              [`model#${modelId}`]: usage.cacheWriteInputTokens || 0,
-              [`usecase#${usecase}`]: usage.cacheWriteInputTokens || 0,
-            },
-          },
-        })
-      );
-    } catch (putError) {
-      console.error('Error creating token usage:', putError);
-    }
+  } catch (error) {
+    console.error('Error updating token usage:', error);
+    throw error;
   }
 }
 
@@ -141,40 +134,36 @@ export const aggregateTokenUsage = async (
   endDate: string,
   userIds?: string[]
 ): Promise<TokenUsageStats[]> => {
-  const userId = userIds?.[0];
-  if (!userId) {
-    throw new Error('userId is required');
+  const uniqueUserIds = [...new Set(userIds ?? [])].filter(Boolean);
+  if (uniqueUserIds.length === 0) {
+    throw new Error('userIds is required');
   }
+
+  const aggregateUserId = uniqueUserIds.join(',');
 
   try {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const statsMap = new Map<string, TokenUsageStats>();
 
-    const keys = [];
+    const keys: ReturnType<typeof createStatsKey>[] = [];
     const currentDate = new Date(start);
     while (currentDate <= end) {
       const dateStr = currentDate.toISOString().slice(0, 10);
-      statsMap.set(dateStr, {
-        date: dateStr,
-        userId,
-        executions: { overall: 0 },
-        inputTokens: { overall: 0 },
-        outputTokens: { overall: 0 },
-        cacheReadInputTokens: { overall: 0 },
-        cacheWriteInputTokens: { overall: 0 },
-      });
+      statsMap.set(
+        dateStr,
+        createEmptyTokenUsageStats(dateStr, aggregateUserId)
+      );
 
-      keys.push({
-        id: `stats#${dateStr}`,
-        userId: userId,
+      uniqueUserIds.forEach((userId) => {
+        keys.push(createStatsKey(dateStr, userId));
       });
 
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
     const chunkSize = 100;
-    const keyChunks = [];
+    const keyChunks: Array<ReturnType<typeof createStatsKey>[]> = [];
     for (let i = 0; i < keys.length; i += chunkSize) {
       keyChunks.push(keys.slice(i, i + chunkSize));
     }
@@ -183,7 +172,7 @@ export const aggregateTokenUsage = async (
       dynamoDbDocument.send(
         new BatchGetCommand({
           RequestItems: {
-            [STATS_TABLE_NAME]: {
+            [getStatsTableName()]: {
               Keys: chunk,
             },
           },
@@ -194,10 +183,20 @@ export const aggregateTokenUsage = async (
     const batchResults = await Promise.all(batchPromises);
 
     batchResults.forEach((result) => {
-      result.Responses?.[STATS_TABLE_NAME]?.forEach((item) => {
+      result.Responses?.[getStatsTableName()]?.forEach((item) => {
         const stats = item as TokenUsageStats;
         if (stats.date) {
-          statsMap.set(stats.date, stats);
+          const existingStats = statsMap.get(stats.date);
+          if (existingStats) {
+            mergeTokenUsageStats(existingStats, stats);
+          } else {
+            const mergedStats = createEmptyTokenUsageStats(
+              stats.date,
+              aggregateUserId
+            );
+            mergeTokenUsageStats(mergedStats, stats);
+            statsMap.set(stats.date, mergedStats);
+          }
         }
       });
     });

@@ -7,6 +7,7 @@ import {
   batchCreateMessages,
   aggregateTokenUsage,
 } from '../../lambda/repository';
+import { updateTokenUsage } from '../../lambda/tokenUsage';
 import { ToBeRecordedMessage } from 'generative-ai-use-cases';
 
 beforeEach(() => {
@@ -22,13 +23,13 @@ describe('aggregateTokenUsage characterization', () => {
   test('throws when userIds is undefined', async () => {
     await expect(
       aggregateTokenUsage('2024-01-01', '2024-01-02')
-    ).rejects.toThrow('userId is required');
+    ).rejects.toThrow('userIds is required');
   });
 
   test('throws when userIds is empty array', async () => {
     await expect(
       aggregateTokenUsage('2024-01-01', '2024-01-02', [])
-    ).rejects.toThrow('userId is required');
+    ).rejects.toThrow('userIds is required');
   });
 
   test('returns initialized stats for date range when no data exists', async () => {
@@ -88,6 +89,50 @@ describe('aggregateTokenUsage characterization', () => {
       aggregateTokenUsage('2024-01-01', '2024-01-02', ['userA'])
     ).rejects.toThrow('DynamoDB down');
   });
+
+  test('aggregates token usage across multiple users for the same date', async () => {
+    sendMock.mockResolvedValue({
+      Responses: {
+        'test-stats-table': [
+          {
+            id: 'stats#2024-01-02',
+            userId: 'userA',
+            date: '2024-01-02',
+            executions: { overall: 2, 'model#claude': 1 },
+            inputTokens: { overall: 10 },
+            outputTokens: { overall: 20 },
+            cacheReadInputTokens: { overall: 3 },
+            cacheWriteInputTokens: { overall: 4 },
+          },
+          {
+            id: 'stats#2024-01-02',
+            userId: 'userB',
+            date: '2024-01-02',
+            executions: { overall: 3, 'model#claude': 2, 'model#gpt': 1 },
+            inputTokens: { overall: 7 },
+            outputTokens: { overall: 11 },
+            cacheReadInputTokens: { overall: 5 },
+            cacheWriteInputTokens: { overall: 6 },
+          },
+        ],
+      },
+    });
+
+    const result = await aggregateTokenUsage('2024-01-01', '2024-01-03', [
+      'userA',
+      'userB',
+    ]);
+
+    expect(result).toHaveLength(3);
+    expect(result[1].userId).toBe('userA,userB');
+    expect(result[1].executions.overall).toBe(5);
+    expect(result[1].executions['model#claude']).toBe(3);
+    expect(result[1].executions['model#gpt']).toBe(1);
+    expect(result[1].inputTokens.overall).toBe(17);
+    expect(result[1].outputTokens.overall).toBe(31);
+    expect(result[1].cacheReadInputTokens.overall).toBe(8);
+    expect(result[1].cacheWriteInputTokens.overall).toBe(10);
+  });
 });
 
 describe('batchCreateMessages token usage characterization', () => {
@@ -133,18 +178,9 @@ describe('batchCreateMessages token usage characterization', () => {
     expect(sendMock).toHaveBeenCalledTimes(2);
   });
 
-  test('token usage update failure falls back to create and is non-blocking', async () => {
-    let callCount = 0;
-    sendMock.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        return Promise.resolve({});
-      }
-      if (callCount === 2) {
-        return Promise.reject(new Error('ValidationException'));
-      }
-      return Promise.resolve({});
-    });
+  test('token usage update failure is surfaced', async () => {
+    sendMock.mockResolvedValueOnce({});
+    sendMock.mockRejectedValueOnce(new Error('ValidationException'));
 
     const messages: ToBeRecordedMessage[] = [
       {
@@ -163,41 +199,38 @@ describe('batchCreateMessages token usage characterization', () => {
       },
     ];
 
-    const result = await batchCreateMessages(messages, 'user1', 'chat1');
-
-    expect(result).toHaveLength(1);
-    expect(callCount).toBeGreaterThanOrEqual(2);
+    await expect(
+      batchCreateMessages(messages, 'user1', 'chat1')
+    ).rejects.toThrow('ValidationException');
   });
 
-  test('both update phases failing is still non-blocking', async () => {
-    let callCount = 0;
-    sendMock.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return Promise.resolve({});
-      return Promise.reject(new Error('both phases fail'));
-    });
-
-    const messages: ToBeRecordedMessage[] = [
-      {
-        messageId: 'm1',
-        role: 'assistant',
-        content: 'response',
-        usecase: 'chat',
-        llmType: 'claude-v3',
-        metadata: {
-          usage: {
-            inputTokens: 100,
-            outputTokens: 50,
-            totalTokens: 150,
-          },
+  test('updateTokenUsage logs and rethrows on DynamoDB error', async () => {
+    const message = {
+      id: 'chat#chat1',
+      createdDate: '1704067200000#0',
+      messageId: 'm1',
+      role: 'assistant',
+      content: 'response',
+      userId: 'user#user1',
+      feedback: 'none',
+      usecase: 'chat',
+      llmType: 'claude-v3',
+      metadata: {
+        usage: {
+          inputTokens: 100,
+          outputTokens: 50,
+          totalTokens: 150,
         },
       },
-    ];
+    } as never;
 
-    const result = await batchCreateMessages(messages, 'user1', 'chat1');
+    sendMock.mockRejectedValueOnce(new Error('DynamoDB down'));
 
-    expect(result).toHaveLength(1);
-    expect(callCount).toBeGreaterThanOrEqual(3);
+    await expect(updateTokenUsage(message)).rejects.toThrow('DynamoDB down');
+    expect(console.error).toHaveBeenCalledWith(
+      'Error updating token usage:',
+      expect.any(Error)
+    );
   });
 
   test('multiple messages with usage trigger parallel updates', async () => {
