@@ -778,10 +778,10 @@ monitor:
   stop_recording: 録音を停止する
   system_generated_context: システムコンテキスト
   system_generated_context_placeholder: AIが生成したコンテキストがここに表示されます...
-  translation_context: 翻訳コンテキスト
-  translation_context_placeholder: 利用可能になると翻訳コンテキストがここに表示されます。
   title: リアルタイム翻訳モニター
   topic_model: トピックモデル
+  translation_context: 翻訳コンテキスト
+  translation_context_placeholder: 利用可能になると翻訳コンテキストがここに表示されます。
   translation_model: 翻訳モデル
 navigation:
   agentChat: Agent チャット

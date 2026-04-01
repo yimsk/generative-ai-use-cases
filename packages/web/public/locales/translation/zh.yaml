@@ -540,10 +540,10 @@ monitor:
   stop_recording: 停止录音
   system_generated_context: 系统上下文
   system_generated_context_placeholder: AI生成的上下文将显示在这里...
-  translation_context: 翻译上下文
-  translation_context_placeholder: 可用时会在此处显示翻译上下文。
   title: 实时翻译监控器
   topic_model: 主题模型
+  translation_context: 翻译上下文
+  translation_context_placeholder: 可用时会在此处显示翻译上下文。
   translation_model: 翻译模型
 navigation:
   agentChat: Agent聊天

@@ -9,6 +9,8 @@ import { useTranslation } from 'react-i18next';
 import { LanguageCode } from '@aws-sdk/client-transcribe-streaming';
 import Select from '../Select';
 import Textarea from '../Textarea';
+import Button from '../Button';
+import ModalDialog from '../ModalDialog';
 import MeetingMinutesTranscriptSegment from './MeetingMinutesTranscriptSegment';
 import MeetingMinutesSettingsPanel from './MeetingMinutesSettingsPanel';
 import MeetingMinutesControlButtons from './MeetingMinutesControlButtons';
@@ -121,6 +123,8 @@ const MeetingMinutesRealtimeTranslation: React.FC<
   // Context states for translation accuracy improvement
   const [userDefinedContext, setUserDefinedContext] = useState('');
   const [systemGeneratedContext, setSystemGeneratedContext] = useState('');
+  const [screenShareStartError, setScreenShareStartError] = useState('');
+  const [isScreenShareChoiceOpen, setIsScreenShareChoiceOpen] = useState(false);
 
   // Simple session management
   const [currentSessionId, setCurrentSessionId] = useState(0);
@@ -330,6 +334,8 @@ const MeetingMinutesRealtimeTranslation: React.FC<
     stopScreenTranscription();
     clearMicTranscripts();
     clearScreenTranscripts();
+    setScreenShareStartError('');
+    setIsScreenShareChoiceOpen(false);
 
     // Reset session state for fresh start
     setCurrentSessionId(0);
@@ -344,92 +350,101 @@ const MeetingMinutesRealtimeTranslation: React.FC<
     onTranscriptChange,
   ]);
 
+  const startTranscription = useCallback(
+    async ({ forceMicOnly = false }: { forceMicOnly?: boolean } = {}) => {
+      setScreenShareStartError('');
+      setIsScreenShareChoiceOpen(false);
+
+      // Simple session management - just increment session ID when recording starts
+      setCurrentSessionId((prev) => prev + 1);
+
+      // Clear only the hooks' internal state, but preserve our segments
+      clearMicTranscripts();
+      clearScreenTranscripts();
+
+      // For bidirectional translation, use multi-language identification with both languages
+      let langCode: LanguageCode | undefined;
+      let languageOptions: string[] | undefined;
+      let enableMultiLanguage: boolean = false;
+
+      if (translationType === 'bidirectional') {
+        langCode = undefined; // No fixed language code for multi-language
+        languageOptions = [primaryLanguage, secondaryLanguage];
+        enableMultiLanguage = true; // Enable multi-language identification
+      } else {
+        langCode =
+          primaryLanguage === 'auto'
+            ? undefined
+            : (primaryLanguage as LanguageCode);
+        languageOptions =
+          primaryLanguage === 'auto' ? ['en-US', 'ja-JP'] : undefined;
+        enableMultiLanguage = false;
+      }
+
+      try {
+        console.log('[MeetingMinutesRealtimeTranslation] start requested', {
+          enableMicAudio,
+          enableScreenAudio,
+          primaryLanguage,
+          secondaryLanguage,
+          translationType,
+          speakerLabel,
+          languageOptions,
+          enableMultiLanguage,
+          forceMicOnly,
+        });
+        let screenStream: MediaStream | null = null;
+        if (!forceMicOnly && enableScreenAudio && isScreenAudioSupported) {
+          screenStream = await prepareScreenCapture();
+        }
+
+        if (screenStream) {
+          startTranscriptionWithStream(
+            screenStream,
+            langCode,
+            speakerLabel,
+            languageOptions,
+            enableMultiLanguage
+          );
+        }
+        if (enableMicAudio || forceMicOnly) {
+          startMicTranscription(
+            langCode,
+            speakerLabel,
+            languageOptions,
+            enableMultiLanguage
+          );
+        }
+      } catch (error) {
+        console.error('Failed to start synchronized recording:', error);
+        setScreenShareStartError(
+          error instanceof Error
+            ? error.message
+            : 'Failed to start screen audio capture'
+        );
+        setIsScreenShareChoiceOpen(true);
+      }
+    },
+    [
+      clearMicTranscripts,
+      clearScreenTranscripts,
+      enableMicAudio,
+      enableScreenAudio,
+      isScreenAudioSupported,
+      prepareScreenCapture,
+      primaryLanguage,
+      secondaryLanguage,
+      speakerLabel,
+      startMicTranscription,
+      startTranscriptionWithStream,
+      translationType,
+    ]
+  );
+
   // Start transcription
   const onClickExecStartTranscription = useCallback(async () => {
-    // Simple session management - just increment session ID when recording starts
-    setCurrentSessionId((prev) => prev + 1);
-
-    // Clear only the hooks' internal state, but preserve our segments
-    clearMicTranscripts();
-    clearScreenTranscripts();
-
-    // For bidirectional translation, use multi-language identification with both languages
-    let langCode: LanguageCode | undefined;
-    let languageOptions: string[] | undefined;
-    let enableMultiLanguage: boolean = false;
-
-    if (translationType === 'bidirectional') {
-      langCode = undefined; // No fixed language code for multi-language
-      languageOptions = [primaryLanguage, secondaryLanguage];
-      enableMultiLanguage = true; // Enable multi-language identification
-    } else {
-      langCode =
-        primaryLanguage === 'auto'
-          ? undefined
-          : (primaryLanguage as LanguageCode);
-      languageOptions =
-        primaryLanguage === 'auto' ? ['en-US', 'ja-JP'] : undefined;
-      enableMultiLanguage = false;
-    }
-
-    try {
-      console.log('[MeetingMinutesRealtimeTranslation] start requested', {
-        enableMicAudio,
-        enableScreenAudio,
-        primaryLanguage,
-        secondaryLanguage,
-        translationType,
-        speakerLabel,
-        languageOptions,
-        enableMultiLanguage,
-      });
-      let screenStream: MediaStream | null = null;
-      if (enableScreenAudio && isScreenAudioSupported) {
-        screenStream = await prepareScreenCapture();
-      }
-
-      if (screenStream) {
-        startTranscriptionWithStream(
-          screenStream,
-          langCode,
-          speakerLabel,
-          languageOptions,
-          enableMultiLanguage
-        );
-      }
-      if (enableMicAudio) {
-        startMicTranscription(
-          langCode,
-          speakerLabel,
-          languageOptions,
-          enableMultiLanguage
-        );
-      }
-    } catch (error) {
-      console.error('Failed to start synchronized recording:', error);
-      if (enableMicAudio) {
-        startMicTranscription(
-          langCode,
-          speakerLabel,
-          languageOptions,
-          enableMultiLanguage
-        );
-      }
-    }
-  }, [
-    primaryLanguage,
-    secondaryLanguage,
-    translationType,
-    speakerLabel,
-    startMicTranscription,
-    enableScreenAudio,
-    enableMicAudio,
-    isScreenAudioSupported,
-    prepareScreenCapture,
-    startTranscriptionWithStream,
-    clearMicTranscripts,
-    clearScreenTranscripts,
-  ]);
+    await startTranscription();
+  }, [startTranscription]);
 
   // Stop transcription
   const handleStopRecording = useCallback(() => {
@@ -567,6 +582,33 @@ const MeetingMinutesRealtimeTranslation: React.FC<
           {t('common.colon')} {screenAudioError}
         </div>
       )}
+
+      <ModalDialog
+        isOpen={isScreenShareChoiceOpen}
+        title="Screen share failed"
+        onClose={() => setIsScreenShareChoiceOpen(false)}>
+        <div className="text-sm text-gray-700">
+          <div>Failed to start screen audio capture</div>
+          {screenShareStartError && (
+            <div className="mt-1 text-gray-500">{screenShareStartError}</div>
+          )}
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              outlined
+              onClick={() => startTranscription()}
+              className="p-2">
+              Retry
+            </Button>
+            <Button
+              onClick={() => {
+                void startTranscription({ forceMicOnly: true });
+              }}
+              className="p-2">
+              Use microphone only
+            </Button>
+          </div>
+        </div>
+      </ModalDialog>
 
       {/* Transcript Panel */}
       <div className="flex min-h-0 flex-1 flex-col">

@@ -124,6 +124,23 @@ vi.mock('../../../src/components/Textarea', () => ({
   ),
 }));
 
+vi.mock('../../../src/components/ModalDialog', () => ({
+  default: ({
+    isOpen,
+    title,
+    children,
+  }: {
+    isOpen: boolean;
+    title: string;
+    children: React.ReactNode;
+  }) =>
+    isOpen ? (
+      <div role="dialog" aria-label={title}>
+        {children}
+      </div>
+    ) : null,
+}));
+
 vi.mock(
   '../../../src/components/MeetingMinutes/MeetingMinutesSettingsPanel',
   () => ({
@@ -239,6 +256,39 @@ beforeEach(() => {
 });
 
 describe('MeetingMinutesRealtimeTranslation', () => {
+  it('surfaces screen share failure and waits for explicit retry or mic-only choice', async () => {
+    mockPrepareScreenCapture.mockRejectedValue(
+      new Error('screen capture blocked')
+    );
+
+    render(<MeetingMinutesRealtimeTranslation />);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'enable-screen-audio' })
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'start-recording' }));
+
+    await flushAsync();
+
+    expect(mockPrepareScreenCapture).toHaveBeenCalledTimes(1);
+    expect(mockStartMicTranscription).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog').textContent).toContain(
+      'Failed to start screen audio capture'
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    await flushAsync();
+
+    expect(mockPrepareScreenCapture).toHaveBeenCalledTimes(2);
+    expect(mockStartMicTranscription).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Use microphone only' })
+    );
+
+    expect(mockStartMicTranscription).toHaveBeenCalledTimes(1);
+  });
+
   it('merges transcript updates by source/result id and keeps chronological order', async () => {
     const { rerender } = render(<MeetingMinutesRealtimeTranslation />);
 
@@ -341,7 +391,7 @@ describe('MeetingMinutesRealtimeTranslation', () => {
       'Hello everyone.',
       'model-a',
       'Japanese',
-      'Recent conversation context: Hello everyone.'
+      'User-defined context: Team sync\n\nSystem-generated context: Product roadmap\n\nRecent conversation context: Hello everyone.'
     );
 
     const [segment] = readSegmentProps();
@@ -383,6 +433,6 @@ describe('MeetingMinutesRealtimeTranslation', () => {
 
     expect(mockPredict).toHaveBeenCalledTimes(2);
 
-    expect(screen.getByDisplayValue('generated context')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('generated context')).not.toBeNull();
   });
 });

@@ -932,10 +932,10 @@ monitor:
   stop_recording: Stop Recording
   system_generated_context: System Context
   system_generated_context_placeholder: AI-generated context will appear here...
-  translation_context: Translation Context
-  translation_context_placeholder: Translation context will appear here once available.
   title: Real-Time Translation Monitor
   topic_model: Topic Model
+  translation_context: Translation Context
+  translation_context_placeholder: Translation context will appear here once available.
   translation_model: Translation Model
 navigation:
   agentChat: Agent Chat
