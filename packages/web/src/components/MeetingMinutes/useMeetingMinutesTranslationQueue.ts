@@ -64,10 +64,8 @@ export const useMeetingMinutesTranslationQueue = ({
     userDefinedContext,
     systemGeneratedContext,
   });
-  const intervalConfigModelRef = useRef(selectedTranslationModel);
 
-  if (intervalConfigModelRef.current !== selectedTranslationModel) {
-    intervalConfigModelRef.current = selectedTranslationModel;
+  useEffect(() => {
     intervalConfigRef.current = {
       primaryLanguage,
       secondaryLanguage,
@@ -76,7 +74,14 @@ export const useMeetingMinutesTranslationQueue = ({
       userDefinedContext,
       systemGeneratedContext,
     };
-  }
+  }, [
+    primaryLanguage,
+    secondaryLanguage,
+    translationType,
+    selectedTranslationModel,
+    userDefinedContext,
+    systemGeneratedContext,
+  ]);
 
   const translateSentence = useCallback(
     async (
