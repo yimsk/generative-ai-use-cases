@@ -1,4 +1,4 @@
-import { Stack, RemovalPolicy, CfnResource, Duration } from 'aws-cdk-lib';
+import { Stack, RemovalPolicy, CfnResource, Duration, Fn } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import {
   CloudFrontToS3,
@@ -226,6 +226,9 @@ export class Web extends Construct {
       this.webUrl = 'CLOSED_NETWORK_MODE';
     }
 
+    const encodeJsonForEnv = (value: unknown) =>
+      Fn.base64(Stack.of(this).toJsonString(value ?? null));
+
     const build = new NodejsBuild(this, 'BuildWeb', {
       assets: [
         {
@@ -297,19 +300,19 @@ export class Web extends Construct {
         VITE_APP_MCP_ENDPOINT: props.mcpEndpoint ?? '',
         VITE_APP_MCP_SERVERS_CONFIG: props.mcpServersConfig ?? '',
         VITE_APP_AGENT_CORE_ENABLED: props.agentCoreEnabled.toString(),
-        VITE_APP_AGENT_CORE_GENERIC_RUNTIME: JSON.stringify(
+        VITE_APP_AGENT_CORE_GENERIC_RUNTIME: encodeJsonForEnv(
           props.agentCoreGenericRuntime
         ),
         VITE_APP_AGENT_CORE_AGENT_BUILDER_ENABLED:
           props.agentBuilderEnabled.toString(),
-        VITE_APP_AGENT_CORE_AGENT_BUILDER_RUNTIME: JSON.stringify(
+        VITE_APP_AGENT_CORE_AGENT_BUILDER_RUNTIME: encodeJsonForEnv(
           props.agentCoreAgentBuilderRuntime
         ),
-        VITE_APP_AGENT_CORE_EXTERNAL_RUNTIMES: JSON.stringify(
+        VITE_APP_AGENT_CORE_EXTERNAL_RUNTIMES: encodeJsonForEnv(
           props.agentCoreExternalRuntimes
         ),
         VITE_APP_RESEARCH_AGENT_ENABLED: props.researchAgentEnabled.toString(),
-        VITE_APP_RESEARCH_AGENT_RUNTIME: JSON.stringify(
+        VITE_APP_RESEARCH_AGENT_RUNTIME: encodeJsonForEnv(
           props.researchAgentRuntime
         ),
         VITE_APP_BRANDING_LOGO_PATH: props.brandingConfig?.logoPath ?? '',

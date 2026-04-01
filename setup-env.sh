@@ -53,10 +53,10 @@ export VITE_APP_SPEECH_TO_SPEECH_MODEL_IDS=$(extract_value "$stack_output" Speec
 export VITE_APP_MCP_ENABLED=$(extract_value "$stack_output" McpEnabled)
 export VITE_APP_MCP_ENDPOINT=$(extract_value "$stack_output" McpEndpoint)
 export VITE_APP_AGENT_CORE_ENABLED=$(extract_value "$stack_output" AgentCoreEnabled)
-export VITE_APP_AGENT_CORE_GENERIC_RUNTIME=$(extract_value "$stack_output" AgentCoreGenericRuntime)
+export VITE_APP_AGENT_CORE_GENERIC_RUNTIME=$(extract_value "$stack_output" AgentCoreGenericRuntime | base64 -d)
 export VITE_APP_AGENT_CORE_AGENT_BUILDER_ENABLED=$(extract_value "$stack_output" AgentCoreAgentBuilderEnabled)
-export VITE_APP_AGENT_CORE_AGENT_BUILDER_RUNTIME=$(extract_value "$stack_output" AgentCoreAgentBuilderRuntime)
-export VITE_APP_AGENT_CORE_EXTERNAL_RUNTIMES=$(extract_value "$stack_output" AgentCoreExternalRuntimes)
+export VITE_APP_AGENT_CORE_AGENT_BUILDER_RUNTIME=$(extract_value "$stack_output" AgentCoreAgentBuilderRuntime | base64 -d)
+export VITE_APP_AGENT_CORE_EXTERNAL_RUNTIMES=$(extract_value "$stack_output" AgentCoreExternalRuntimes | base64 -d)
 export VITE_APP_MCP_SERVERS_CONFIG=$(extract_value "$stack_output" McpServersConfig)
 if [ -f "packages/cdk/branding.json" ]; then
     export VITE_APP_BRANDING_LOGO_PATH=$(cat packages/cdk/branding.json | jq -r '.logoPath // ""')

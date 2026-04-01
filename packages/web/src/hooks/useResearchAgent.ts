@@ -6,15 +6,18 @@ import {
   AgentCoreRuntimeRequest,
   Model,
 } from 'generative-ai-use-cases';
+import { parseAgentCoreEnvJson } from './useAgentCore';
 
 // Get environment variables
 const researchAgentEnabled =
   import.meta.env.VITE_APP_RESEARCH_AGENT_ENABLED === 'true';
-const researchAgentRuntime = import.meta.env.VITE_APP_RESEARCH_AGENT_RUNTIME
-  ? (JSON.parse(
-      import.meta.env.VITE_APP_RESEARCH_AGENT_RUNTIME
-    ) as AgentCoreConfiguration)
-  : undefined;
+const researchAgentRuntime = parseAgentCoreEnvJson<
+  AgentCoreConfiguration | undefined
+>(
+  import.meta.env.VITE_APP_RESEARCH_AGENT_RUNTIME,
+  undefined,
+  'VITE_APP_RESEARCH_AGENT_RUNTIME'
+);
 
 export const useResearchAgent = (id: string) => {
   const {

@@ -7,29 +7,66 @@ import {
 } from 'generative-ai-use-cases';
 import { findModelByModelId } from './useModel';
 
+const decodeBase64Utf8 = (value: string) => {
+  const binaryString = atob(value);
+  const bytes = Uint8Array.from(binaryString, (char) => char.charCodeAt(0));
+
+  return new TextDecoder('utf-8').decode(bytes);
+};
+
+export const parseAgentCoreEnvJson = <T>(
+  envValue: string | undefined,
+  fallbackValue: T,
+  envVarName: string
+): T => {
+  if (!envValue || envValue.trim() === '' || envValue === 'null') {
+    return fallbackValue;
+  }
+
+  try {
+    const parsed = JSON.parse(envValue) as T | null;
+
+    return parsed === null ? fallbackValue : parsed;
+  } catch (jsonError) {
+    try {
+      const parsed = JSON.parse(decodeBase64Utf8(envValue)) as T | null;
+
+      return parsed === null ? fallbackValue : parsed;
+    } catch (base64Error) {
+      console.error(`Failed to parse ${envVarName}:`, jsonError, base64Error);
+
+      return fallbackValue;
+    }
+  }
+};
+
 // Get environment variables for separated generic and external runtimes
 const agentCoreEnabled = import.meta.env.VITE_APP_AGENT_CORE_ENABLED === 'true';
 
 // Generic runtime (deployed by CDK)
 const agentCoreGenericRuntime =
-  import.meta.env.VITE_APP_AGENT_CORE_GENERIC_RUNTIME !== 'null'
-    ? (JSON.parse(
-        import.meta.env.VITE_APP_AGENT_CORE_GENERIC_RUNTIME || 'null'
-      ) as AgentCoreConfiguration | null)
-    : null;
+  parseAgentCoreEnvJson<AgentCoreConfiguration | null>(
+    import.meta.env.VITE_APP_AGENT_CORE_GENERIC_RUNTIME,
+    null,
+    'VITE_APP_AGENT_CORE_GENERIC_RUNTIME'
+  );
 
 // AgentBuilder runtime (deployed by CDK)
 const agentCoreAgentBuilderRuntime =
-  import.meta.env.VITE_APP_AGENT_CORE_AGENT_BUILDER_RUNTIME !== 'null'
-    ? (JSON.parse(
-        import.meta.env.VITE_APP_AGENT_CORE_AGENT_BUILDER_RUNTIME || 'null'
-      ) as AgentCoreConfiguration | null)
-    : null;
+  parseAgentCoreEnvJson<AgentCoreConfiguration | null>(
+    import.meta.env.VITE_APP_AGENT_CORE_AGENT_BUILDER_RUNTIME,
+    null,
+    'VITE_APP_AGENT_CORE_AGENT_BUILDER_RUNTIME'
+  );
 
 // External runtimes (pre-defined)
-const agentCoreExternalRuntimes = JSON.parse(
-  import.meta.env.VITE_APP_AGENT_CORE_EXTERNAL_RUNTIMES || '[]'
-) as AgentCoreConfiguration[];
+const agentCoreExternalRuntimes = parseAgentCoreEnvJson<
+  AgentCoreConfiguration[]
+>(
+  import.meta.env.VITE_APP_AGENT_CORE_EXTERNAL_RUNTIMES,
+  [],
+  'VITE_APP_AGENT_CORE_EXTERNAL_RUNTIMES'
+);
 
 const useAgentCore = (id: string) => {
   const {

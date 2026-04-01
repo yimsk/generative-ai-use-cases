@@ -1,4 +1,4 @@
-import { Stack, StackProps, CfnOutput, Duration } from 'aws-cdk-lib';
+import { Stack, StackProps, CfnOutput, Duration, Fn } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import {
   Auth,
@@ -588,12 +588,16 @@ export class GenerativeAiUseCasesStack extends Stack {
     });
 
     new CfnOutput(this, 'AgentCoreGenericRuntime', {
-      value: genericRuntimeArn
-        ? JSON.stringify({
-            name: genericRuntimeName || 'GenericAgentCoreRuntime',
-            arn: genericRuntimeArn,
-          })
-        : 'null',
+      value: Fn.base64(
+        this.toJsonString(
+          genericRuntimeArn
+            ? {
+                name: genericRuntimeName || 'GenericAgentCoreRuntime',
+                arn: genericRuntimeArn,
+              }
+            : null
+        )
+      ),
     });
 
     new CfnOutput(this, 'AgentCoreAgentBuilderEnabled', {
@@ -601,16 +605,20 @@ export class GenerativeAiUseCasesStack extends Stack {
     });
 
     new CfnOutput(this, 'AgentCoreAgentBuilderRuntime', {
-      value: agentBuilderRuntimeArn
-        ? JSON.stringify({
-            name: agentBuilderRuntimeName || 'AgentBuilderAgentCoreRuntime',
-            arn: agentBuilderRuntimeArn,
-          })
-        : 'null',
+      value: Fn.base64(
+        this.toJsonString(
+          agentBuilderRuntimeArn
+            ? {
+                name: agentBuilderRuntimeName || 'AgentBuilderAgentCoreRuntime',
+                arn: agentBuilderRuntimeArn,
+              }
+            : null
+        )
+      ),
     });
 
     new CfnOutput(this, 'AgentCoreExternalRuntimes', {
-      value: JSON.stringify(params.agentCoreExternalRuntimes),
+      value: Fn.base64(this.toJsonString(params.agentCoreExternalRuntimes)),
     });
 
     new CfnOutput(this, 'McpServersConfig', {
