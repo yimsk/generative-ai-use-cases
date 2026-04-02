@@ -257,7 +257,7 @@ const useMicrophone = () => {
     }
 
     const command = buildStartStreamCommand({
-      stream: mic as unknown as AsyncIterable<Buffer>,
+      stream: mic,
       languageCode,
       speakerLabel,
       languageOptions,

@@ -103,41 +103,99 @@ export const createTranscribeClient = async () => {
   });
 };
 
-export const createAudioStream = (stream: AsyncIterable<Buffer>) => {
+type StreamWithEvents = {
+  on(event: 'data', handler: (chunk: unknown) => void): void;
+  on(event: 'end' | 'close', handler: () => void): void;
+  on(event: 'error', handler: (err: unknown) => void): void;
+};
+
+export const createAudioStream = (stream: MicrophoneStream) => {
+  const s = stream as unknown as StreamWithEvents;
+
   return (async function* () {
     let chunkCount = 0;
 
-    try {
-      for await (const chunk of stream) {
-        chunkCount += 1;
-        const encodedChunk = pcmEncodeChunk(chunk);
+    const queue: Buffer[] = [];
+    let done = false;
+    let streamError: unknown = null;
+    let notify: (() => void) | null = null;
 
-        if (
-          chunkCount <= 3 ||
-          chunkCount % AUDIO_STREAM_CHUNK_LOG_INTERVAL === 0
-        ) {
-          logAudioStreamDebug('Yielding audio chunk to transcribe', {
-            chunkCount,
-            rawByteLength: chunk.length,
-            encodedByteLength: encodedChunk.length,
-          });
+    const wake = () => {
+      if (notify) {
+        const fn = notify;
+        notify = null;
+        fn();
+      }
+    };
+
+    s.on('data', (chunk: unknown) => {
+      if (chunk instanceof Buffer) {
+        queue.push(chunk);
+      } else if (chunk instanceof ArrayBuffer) {
+        queue.push(Buffer.from(chunk));
+      } else if (ArrayBuffer.isView(chunk)) {
+        queue.push(Buffer.from((chunk as ArrayBufferView).buffer));
+      }
+      wake();
+    });
+    s.on('end', () => {
+      done = true;
+      wake();
+    });
+    s.on('error', (err: unknown) => {
+      streamError = err;
+      done = true;
+      wake();
+    });
+    s.on('close', () => {
+      done = true;
+      wake();
+    });
+
+    try {
+      while (true) {
+        while (queue.length > 0) {
+          const chunk = queue.shift()!;
+          chunkCount += 1;
+          const encodedChunk = pcmEncodeChunk(chunk);
+
+          if (
+            chunkCount <= 3 ||
+            chunkCount % AUDIO_STREAM_CHUNK_LOG_INTERVAL === 0
+          ) {
+            logAudioStreamDebug('Yielding audio chunk to transcribe', {
+              chunkCount,
+              rawByteLength: chunk.length,
+              encodedByteLength: encodedChunk.length,
+            });
+          }
+
+          yield {
+            AudioEvent: {
+              AudioChunk: encodedChunk,
+            },
+          };
         }
 
-        yield {
-          AudioEvent: {
-            AudioChunk: encodedChunk,
-          },
-        };
+        if (streamError) {
+          logAudioStreamDebug('Audio stream iteration failed', {
+            chunkCount,
+            error:
+              streamError instanceof Error
+                ? { name: streamError.name, message: streamError.message }
+                : streamError,
+          });
+          throw streamError;
+        }
+
+        if (done) {
+          break;
+        }
+
+        await new Promise<void>((resolve) => {
+          notify = resolve;
+        });
       }
-    } catch (error) {
-      logAudioStreamDebug('Audio stream iteration failed', {
-        chunkCount,
-        error:
-          error instanceof Error
-            ? { name: error.name, message: error.message }
-            : error,
-      });
-      throw error;
     } finally {
       logAudioStreamDebug('Audio stream iteration finished', {
         chunkCount,
@@ -154,7 +212,7 @@ export const buildStartStreamCommand = ({
   enableMultiLanguage = false,
   mediaSampleRateHertz,
 }: {
-  stream: AsyncIterable<Buffer>;
+  stream: MicrophoneStream;
   languageCode?: LanguageCode;
   speakerLabel?: boolean;
   languageOptions?: string[];

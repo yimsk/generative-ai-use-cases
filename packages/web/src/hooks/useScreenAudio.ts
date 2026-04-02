@@ -2,7 +2,6 @@ import {
   LanguageCode,
   TranscribeStreamingClient,
 } from '@aws-sdk/client-transcribe-streaming';
-import { Buffer } from 'buffer';
 import MicrophoneStream from 'microphone-stream';
 import { useState, useEffect, useMemo } from 'react';
 import {
@@ -234,7 +233,7 @@ const useScreenAudio = () => {
     }
 
     const command = buildStartStreamCommand({
-      stream: stream as unknown as AsyncIterable<Buffer>,
+      stream: stream,
       languageCode,
       speakerLabel,
       languageOptions,
