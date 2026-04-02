@@ -43,6 +43,7 @@ import { Authenticator } from '@aws-amplify/ui-react';
 import UseCaseBuilderEditPage from './pages/useCaseBuilder/UseCaseBuilderEditPage.tsx';
 import App from './App.tsx';
 import UseCaseBuilderRoot from './UseCaseBuilderRoot.tsx';
+import MonitorRoot from './MonitorRoot.tsx';
 import UseCaseBuilderExecutePage from './pages/useCaseBuilder/UseCaseBuilderExecutePage.tsx';
 import UseCaseBuilderSamplesPage from './pages/useCaseBuilder/UseCaseBuilderSamplesPage.tsx';
 import UseCaseBuilderMyUseCasePage from './pages/useCaseBuilder/UseCaseBuilderMyUseCasePage.tsx';
@@ -260,12 +261,6 @@ const routes: RouteObject[] = [
         element: <RealtimeTranslationPage />,
       }
     : null,
-  enabled('realtimeTranslation')
-    ? {
-        path: '/realtime-translation/monitor',
-        element: <RealtimeMonitorPage />,
-      }
-    : null,
   {
     path: '*',
     element: <NotFound />,
@@ -303,6 +298,16 @@ const useCaseBuilderRoutes: RouteObject[] = [
   },
 ].flatMap((r) => (r !== null ? [r] : []));
 
+const monitorRoutes: RouteObject[] = [
+  enabled('realtimeTranslation')
+    ? {
+        path: '/realtime-translation/monitor',
+        element: <RealtimeMonitorPage />,
+      }
+    : null,
+  { path: '*', element: <NotFound /> },
+].flatMap((r) => (r !== null ? [r] : []));
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -331,6 +336,23 @@ const router = createBrowserRouter([
             </AuthWithUserpool>
           ),
           children: useCaseBuilderRoutes,
+        },
+      ]
+    : []),
+  ...(enabled('realtimeTranslation')
+    ? [
+        {
+          path: '/realtime-translation/monitor',
+          element: samlAuthEnabled ? (
+            <AuthWithSAML>
+              <MonitorRoot />
+            </AuthWithSAML>
+          ) : (
+            <AuthWithUserpool>
+              <MonitorRoot />
+            </AuthWithUserpool>
+          ),
+          children: monitorRoutes,
         },
       ]
     : []),
