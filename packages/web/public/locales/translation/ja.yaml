@@ -205,6 +205,17 @@ common:
   trace: トレース
   try: 試す
   update: 更新
+analysisAgent:
+  analyzing: 分析中...
+  charts_label: 生成されたグラフ
+  chat_label: 会話
+  clear: クリア
+  description: データや分析したい内容を入力してください。AIが分析してグラフを自動生成します。グラフは右パネルに表示されます。
+  input_placeholder: データや分析の質問を入力してください。例：この売上データを分析してください — Q1:100万, Q2:150万, Q3:120万, Q4:200万
+  model: モデル
+  no_charts: AIがグラフを生成するとここに表示されます
+  send: 送信
+  title: 分析エージェント
 demo:
   inter_use_cases: ユースケース連携
 diagram:
@@ -785,6 +796,7 @@ monitor:
   translation_model: 翻訳モデル
 navigation:
   agentChat: Agent チャット
+  analysisAgent: 分析エージェント
   chat: チャット
   diagramGeneration: ダイアグラム生成
   flowChat: Flow チャット

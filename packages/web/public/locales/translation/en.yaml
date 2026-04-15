@@ -216,6 +216,21 @@ common:
   trace: Trace
   try: Try
   update: Update
+analysisAgent:
+  analyzing: Analyzing...
+  charts_label: Generated Charts
+  chat_label: Conversation
+  clear: Clear
+  description: >-
+    Enter data or an analytical question. The AI will analyze it and generate
+    charts automatically. Charts appear in the right panel.
+  input_placeholder: >-
+    Enter your data or analysis question. Example: Analyze this sales data —
+    Q1: 100, Q2: 150, Q3: 120, Q4: 200
+  model: Model
+  no_charts: Charts will appear here once the AI generates them
+  send: Send
+  title: Analysis Agent
 demo:
   inter_use_cases: Use Case Integration
 diagram:
@@ -939,6 +954,7 @@ monitor:
   translation_model: Translation Model
 navigation:
   agentChat: Agent Chat
+  analysisAgent: Analysis Agent
   chat: Chat
   diagramGeneration: Diagram Generation
   flowChat: Flow Chat

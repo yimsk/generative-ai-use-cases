@@ -49,6 +49,7 @@ import UseCaseBuilderSamplesPage from './pages/useCaseBuilder/UseCaseBuilderSamp
 import UseCaseBuilderMyUseCasePage from './pages/useCaseBuilder/UseCaseBuilderMyUseCasePage.tsx';
 import { optimizePromptEnabled } from './hooks/useOptimizePrompt';
 import GenerateDiagramPage from './pages/GenerateDiagramPage.tsx';
+import AnalysisAgentPage from './pages/AnalysisAgentPage.tsx';
 import WriterPage from './pages/WriterPage.tsx';
 import useUseCases from './hooks/useUseCases';
 import { Toaster } from 'sonner';
@@ -155,6 +156,12 @@ const routes: RouteObject[] = [
     ? {
         path: '/diagram',
         element: <GenerateDiagramPage />,
+      }
+    : null,
+  enabled('diagram')
+    ? {
+        path: '/analysis-agent',
+        element: <AnalysisAgentPage />,
       }
     : null,
   optimizePromptEnabled

@@ -285,6 +285,14 @@ const App: React.FC = () => {
           display: 'usecase' as const,
         }
       : null,
+    enabled('diagram')
+      ? {
+          label: t('navigation.analysisAgent'),
+          to: '/analysis-agent',
+          icon: <PiGraph />,
+          display: 'usecase' as const,
+        }
+      : null,
     {
       label: t('navigation.speechRecognition'),
       to: '/transcribe',
